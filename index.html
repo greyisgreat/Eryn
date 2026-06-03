@@ -7,15 +7,15 @@
   <style>
     :root {
       color-scheme: dark;
-      --bg: #0b0f14;
-      --panel: #121922;
-      --panel-strong: #172230;
+      --bg: #0b0712;
+      --panel: #151020;
+      --panel-strong: #211631;
       --text: #eef4f8;
-      --muted: #9fb0bd;
-      --line: #263545;
-      --accent: #54d6c7;
-      --accent-2: #f5b85b;
-      --accent-3: #8ea7ff;
+      --muted: #b8a8ca;
+      --line: #3d2f50;
+      --accent: #c27cff;
+      --accent-2: #f0b7ff;
+      --accent-3: #806bff;
       --danger: #ff8a8a;
       --good: #9ee6a3;
       --shadow: 0 18px 60px rgba(0, 0, 0, 0.34);
@@ -28,9 +28,9 @@
       margin: 0;
       min-height: 100vh;
       background:
-        radial-gradient(circle at 15% 10%, rgba(84, 214, 199, 0.12), transparent 30%),
-        radial-gradient(circle at 85% 20%, rgba(245, 184, 91, 0.09), transparent 26%),
-        linear-gradient(145deg, #080b0f 0%, #111923 55%, #0a0d12 100%);
+        radial-gradient(circle at 18% 12%, rgba(194, 124, 255, 0.2), transparent 30%),
+        radial-gradient(circle at 82% 18%, rgba(128, 107, 255, 0.16), transparent 28%),
+        linear-gradient(145deg, #07040d 0%, #160d22 55%, #090711 100%);
       color: var(--text);
     }
 
@@ -40,7 +40,7 @@
 
     button {
       border: 1px solid var(--line);
-      background: #182331;
+      background: #20152f;
       color: var(--text);
       border-radius: 7px;
       padding: 10px 13px;
@@ -50,7 +50,7 @@
 
     button:hover {
       border-color: var(--accent);
-      background: #1c2b38;
+      background: #2a1d3d;
     }
 
     button:active { transform: translateY(1px); }
@@ -58,7 +58,7 @@
     button.primary {
       background: var(--accent);
       border-color: var(--accent);
-      color: #06201d;
+      color: #190622;
       font-weight: 700;
     }
 
@@ -70,7 +70,7 @@
     input, textarea {
       width: 100%;
       border: 1px solid var(--line);
-      background: #0d131a;
+      background: #100b18;
       color: var(--text);
       border-radius: 7px;
       padding: 11px 12px;
@@ -79,7 +79,7 @@
 
     input:focus, textarea:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(84, 214, 199, 0.12);
+      box-shadow: 0 0 0 3px rgba(194, 124, 255, 0.14);
     }
 
     .app {
@@ -93,7 +93,7 @@
     }
 
     .side, .workspace {
-      background: rgba(18, 25, 34, 0.84);
+      background: rgba(21, 16, 32, 0.86);
       border: 1px solid rgba(255, 255, 255, 0.08);
       box-shadow: var(--shadow);
       backdrop-filter: blur(18px);
@@ -152,9 +152,10 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       background:
-        linear-gradient(160deg, rgba(84, 214, 199, 0.08), transparent 42%),
-        linear-gradient(25deg, rgba(142, 167, 255, 0.1), transparent 50%),
-        #0d131a;
+        radial-gradient(circle at center, rgba(194, 124, 255, 0.18), transparent 48%),
+        linear-gradient(160deg, rgba(194, 124, 255, 0.12), transparent 42%),
+        linear-gradient(25deg, rgba(128, 107, 255, 0.14), transparent 50%),
+        #100b18;
       overflow: hidden;
     }
 
@@ -162,26 +163,55 @@
       content: "";
       position: absolute;
       inset: 18px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(240, 183, 255, 0.16);
       border-radius: 50%;
     }
 
     .voice-button {
-      width: 148px;
+      width: 176px;
       aspect-ratio: 1;
       border-radius: 50%;
-      border: 1px solid rgba(84, 214, 199, 0.6);
+      border: 1px solid rgba(240, 183, 255, 0.7);
       background:
-        radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.8), rgba(84, 214, 199, 0.34) 18%, rgba(84, 214, 199, 0.12) 54%, rgba(10, 14, 19, 0.7) 100%);
-      box-shadow: 0 0 38px rgba(84, 214, 199, 0.2), inset 0 0 22px rgba(84, 214, 199, 0.18);
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.95) 0 3%, rgba(240, 183, 255, 0.75) 4% 7%, transparent 8%),
+        repeating-radial-gradient(circle at center, transparent 0 12px, rgba(240, 183, 255, 0.34) 13px 14px, transparent 15px 25px),
+        conic-gradient(from 18deg, transparent 0 8deg, rgba(240, 183, 255, 0.75) 9deg 12deg, transparent 13deg 31deg, rgba(128, 107, 255, 0.58) 32deg 36deg, transparent 37deg 61deg),
+        radial-gradient(circle, rgba(194, 124, 255, 0.34) 0 30%, rgba(128, 107, 255, 0.14) 52%, rgba(10, 5, 18, 0.5) 72%, transparent 100%),
+        url("eryn-orb-reference.webp") center / cover;
+      background-blend-mode: screen, screen, screen, screen, luminosity;
+      box-shadow: 0 0 44px rgba(194, 124, 255, 0.34), 0 0 90px rgba(128, 107, 255, 0.18), inset 0 0 24px rgba(240, 183, 255, 0.22);
       z-index: 1;
       padding: 0;
+      position: relative;
+      isolation: isolate;
+      filter: hue-rotate(82deg) saturate(1.35) brightness(1.08);
+    }
+
+    .voice-button::before,
+    .voice-button::after {
+      content: "";
+      position: absolute;
+      inset: 9px;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .voice-button::before {
+      border: 1px dashed rgba(240, 183, 255, 0.56);
+      animation: rotate-cw 16s linear infinite;
+    }
+
+    .voice-button::after {
+      inset: 29px;
+      border: 1px solid rgba(255, 255, 255, 0.34);
+      box-shadow: 0 0 18px rgba(240, 183, 255, 0.45);
+      animation: rotate-ccw 11s linear infinite;
     }
 
     .voice-button.listening {
       animation: breathe 1.25s ease-in-out infinite;
       border-color: var(--accent-2);
-      box-shadow: 0 0 58px rgba(245, 184, 91, 0.28), inset 0 0 28px rgba(245, 184, 91, 0.2);
+      box-shadow: 0 0 70px rgba(240, 183, 255, 0.46), 0 0 116px rgba(128, 107, 255, 0.28), inset 0 0 32px rgba(240, 183, 255, 0.32);
     }
 
     .meter {
@@ -200,13 +230,29 @@
       display: block;
       min-height: 5px;
       border-radius: 2px;
-      background: linear-gradient(180deg, var(--accent), var(--accent-3));
+      background: linear-gradient(180deg, var(--accent-2), var(--accent-3));
       transform-origin: bottom;
       animation: meter 1.4s ease-in-out infinite;
       animation-delay: calc(var(--i) * -0.08s);
     }
 
     .field-stack { display: grid; gap: 10px; }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #100b18;
+      padding: 10px 12px;
+    }
+
+    .toggle-row input {
+      width: auto;
+      accent-color: var(--accent);
+    }
 
     .action-row {
       display: flex;
@@ -273,7 +319,7 @@
 
     .message {
       border: 1px solid var(--line);
-      background: #0d131a;
+      background: #100b18;
       border-radius: 8px;
       padding: 13px;
       line-height: 1.5;
@@ -305,11 +351,11 @@
       min-height: 44px;
     }
 
-    .diagram-board, .map-board {
+    .diagram-board, .map-board, .connections-board {
       min-height: 520px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: #0d131a;
+      background: #100b18;
       overflow: hidden;
       position: relative;
     }
@@ -362,9 +408,60 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 14px;
-      background: #0d131a;
+      background: #100b18;
       display: grid;
       gap: 10px;
+    }
+
+    .connection-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .connection-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #130d1e;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      min-height: 160px;
+    }
+
+    .connection-card h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .connection-status {
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.4;
+    }
+
+    .editor-pane {
+      display: grid;
+      grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .file-list {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0d0914;
+      min-height: 260px;
+      max-height: 420px;
+      overflow: auto;
+      padding: 8px;
+    }
+
+    .file-list button {
+      width: 100%;
+      text-align: left;
+      margin-bottom: 6px;
+      word-break: break-word;
     }
 
     .settings-card h2 {
@@ -382,6 +479,14 @@
     @keyframes breathe {
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.055); }
+    }
+
+    @keyframes rotate-cw {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes rotate-ccw {
+      to { transform: rotate(-360deg); }
     }
 
     @keyframes meter {
@@ -405,7 +510,7 @@
         min-height: 520px;
       }
 
-      .split, .settings-grid {
+      .split, .settings-grid, .connection-grid, .editor-pane {
         grid-template-columns: 1fr;
       }
 
@@ -435,6 +540,14 @@
         </div>
       </section>
 
+      <label class="toggle-row">
+        <span>
+          <strong>Hands-free</strong><br>
+          <span class="hint">Keeps listening after Eryn answers.</span>
+        </span>
+        <input id="handsFreeToggle" type="checkbox">
+      </label>
+
       <form class="command-form" id="commandForm">
         <label>
           <span class="label">Ask or command Eryn</span>
@@ -454,6 +567,7 @@
         <button class="tab active" type="button" data-tab="chat">Chat</button>
         <button class="tab" type="button" data-tab="diagram">Diagram</button>
         <button class="tab" type="button" data-tab="map">Map</button>
+        <button class="tab" type="button" data-tab="connections">Connections</button>
         <button class="tab" type="button" data-tab="settings">Settings</button>
       </nav>
 
@@ -466,6 +580,7 @@
             <button type="button" data-command="make a complex diagram of product discovery to launch">Make Diagram</button>
             <button type="button" data-command="show a map of New York City">Show Map</button>
             <button type="button" data-command="open maps for coffee near me">Open Maps</button>
+            <button type="button" data-command="turn hands free on">Hands-Free On</button>
           </div>
         </div>
       </section>
@@ -494,6 +609,51 @@
         </div>
       </section>
 
+      <section class="panel" id="connectionsPanel">
+        <div class="toolbar">
+          <h2>Connections</h2>
+          <div class="action-row">
+            <button type="button" id="refreshFilesButton">Refresh files</button>
+          </div>
+        </div>
+        <div class="connections-board" style="padding:14px;">
+          <div class="connection-grid">
+            <article class="connection-card">
+              <h3>Local Folder</h3>
+              <p class="connection-status" id="folderStatus">Not connected. Chrome and Edge can grant folder access for reading and saving files.</p>
+              <button class="primary" type="button" id="connectFolderButton">Connect folder</button>
+            </article>
+            <article class="connection-card">
+              <h3>GitHub Repo</h3>
+              <p class="connection-status" id="githubStatus">Ready for a future GitHub token connection. Use this for repo edits, commits, and pull requests.</p>
+              <input id="githubRepoInput" type="text" placeholder="owner/repo">
+            </article>
+            <article class="connection-card">
+              <h3>Editing Bridge</h3>
+              <p class="connection-status" id="bridgeStatus">Ready for a future local server connection so Eryn can edit many files safely.</p>
+              <input id="bridgeUrlInput" type="text" placeholder="http://localhost:8787">
+            </article>
+          </div>
+          <div class="editor-pane">
+            <div class="file-list" id="fileList">Connect a folder to browse editable files.</div>
+            <div class="field-stack">
+              <label>
+                <span class="label">Selected file</span>
+                <input id="selectedFileInput" type="text" readonly placeholder="No file selected">
+              </label>
+              <label>
+                <span class="label">File content</span>
+                <textarea id="fileEditor" rows="13" placeholder="File content appears here after you choose a file."></textarea>
+              </label>
+              <div class="action-row">
+                <button class="primary" type="button" id="saveFileButton">Save file</button>
+                <button type="button" id="summarizeFileButton">Summarize file</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="panel" id="settingsPanel">
         <div class="settings-grid">
           <article class="settings-card">
@@ -516,7 +676,7 @@
             <h2>Voice</h2>
             <label>
               <span class="label">Preferred voice</span>
-              <select id="voiceSelect" style="width:100%;border:1px solid var(--line);background:#0d131a;color:var(--text);border-radius:7px;padding:11px 12px;"></select>
+              <select id="voiceSelect" style="width:100%;border:1px solid var(--line);background:#100b18;color:var(--text);border-radius:7px;padding:11px 12px;"></select>
             </label>
             <label>
               <span class="label">Speaking speed</span>
@@ -537,10 +697,16 @@
     const state = {
       recognition: null,
       listening: false,
+      handsFree: localStorage.getItem("eryn_hands_free") === "true",
+      speaking: false,
+      restarting: false,
       voices: [],
       selectedVoice: localStorage.getItem("eryn_voice_name") || "",
       lastMapUrl: "",
-      lastDiagramSvg: ""
+      lastDiagramSvg: "",
+      folderHandle: null,
+      fileHandles: [],
+      activeFile: null
     };
 
     const els = {
@@ -563,7 +729,20 @@
       testVoiceButton: document.getElementById("testVoiceButton"),
       voiceSelect: document.getElementById("voiceSelect"),
       rateInput: document.getElementById("rateInput"),
-      pitchInput: document.getElementById("pitchInput")
+      pitchInput: document.getElementById("pitchInput"),
+      handsFreeToggle: document.getElementById("handsFreeToggle"),
+      connectFolderButton: document.getElementById("connectFolderButton"),
+      refreshFilesButton: document.getElementById("refreshFilesButton"),
+      folderStatus: document.getElementById("folderStatus"),
+      githubStatus: document.getElementById("githubStatus"),
+      bridgeStatus: document.getElementById("bridgeStatus"),
+      githubRepoInput: document.getElementById("githubRepoInput"),
+      bridgeUrlInput: document.getElementById("bridgeUrlInput"),
+      fileList: document.getElementById("fileList"),
+      selectedFileInput: document.getElementById("selectedFileInput"),
+      fileEditor: document.getElementById("fileEditor"),
+      saveFileButton: document.getElementById("saveFileButton"),
+      summarizeFileButton: document.getElementById("summarizeFileButton")
     };
 
     const sites = {
@@ -585,6 +764,9 @@
     function boot() {
       els.groqInput.value = localStorage.getItem("eryn_groq_token") || "";
       els.geminiInput.value = localStorage.getItem("eryn_gemini_token") || "";
+      els.githubRepoInput.value = localStorage.getItem("eryn_github_repo") || "";
+      els.bridgeUrlInput.value = localStorage.getItem("eryn_bridge_url") || "";
+      els.handsFreeToggle.checked = state.handsFree;
       setupTabs();
       setupSpeechRecognition();
       setupVoiceList();
@@ -606,12 +788,29 @@
       });
       els.saveKeysButton.addEventListener("click", saveKeys);
       els.clearKeysButton.addEventListener("click", clearKeys);
-      els.stopSpeechButton.addEventListener("click", () => window.speechSynthesis?.cancel());
+      els.stopSpeechButton.addEventListener("click", () => {
+        window.speechSynthesis?.cancel();
+        state.speaking = false;
+        setStatus(state.handsFree ? "Hands-free" : "Ready");
+      });
       els.testVoiceButton.addEventListener("click", () => speak("This is Eryn. I will keep it natural, clear, and useful."));
+      els.handsFreeToggle.addEventListener("change", () => setHandsFree(els.handsFreeToggle.checked));
       els.voiceSelect.addEventListener("change", () => {
         state.selectedVoice = els.voiceSelect.value;
         localStorage.setItem("eryn_voice_name", state.selectedVoice);
       });
+      els.githubRepoInput.addEventListener("change", () => {
+        localStorage.setItem("eryn_github_repo", els.githubRepoInput.value.trim());
+        els.githubStatus.textContent = els.githubRepoInput.value.trim() ? `Saved repo target: ${els.githubRepoInput.value.trim()}.` : "Ready for a future GitHub token connection. Use this for repo edits, commits, and pull requests.";
+      });
+      els.bridgeUrlInput.addEventListener("change", () => {
+        localStorage.setItem("eryn_bridge_url", els.bridgeUrlInput.value.trim());
+        els.bridgeStatus.textContent = els.bridgeUrlInput.value.trim() ? `Saved bridge URL: ${els.bridgeUrlInput.value.trim()}.` : "Ready for a future local server connection so Eryn can edit many files safely.";
+      });
+      els.connectFolderButton.addEventListener("click", connectFolder);
+      els.refreshFilesButton.addEventListener("click", refreshFiles);
+      els.saveFileButton.addEventListener("click", saveActiveFile);
+      els.summarizeFileButton.addEventListener("click", summarizeActiveFile);
       els.openMapButton.addEventListener("click", () => {
         if (state.lastMapUrl) openTab(state.lastMapUrl);
       });
@@ -649,7 +848,8 @@
       state.recognition.onend = () => {
         state.listening = false;
         els.voiceButton.classList.remove("listening");
-        setStatus("Ready");
+        setStatus(state.handsFree ? "Hands-free" : "Ready");
+        if (state.handsFree && !state.speaking) scheduleListenRestart();
       };
       state.recognition.onerror = event => {
         addMessage("error", readableSpeechError(event.error));
@@ -708,6 +908,7 @@
 
     async function handleCommand(raw) {
       const command = raw.trim();
+      if (!command || state.speaking) return;
       addMessage("user", command);
       const localResult = runLocalAction(command);
       if (localResult) {
@@ -761,6 +962,28 @@
         return { message: "Chat cleared.", speech: "Chat cleared." };
       }
 
+      if (lower.includes("hands free on") || lower.includes("hands-free on") || lower.includes("start hands free")) {
+        setHandsFree(true);
+        return { message: "Hands-free mode is on.", speech: "Hands-free mode is on." };
+      }
+
+      if (lower.includes("hands free off") || lower.includes("hands-free off") || lower.includes("stop hands free")) {
+        setHandsFree(false);
+        return { message: "Hands-free mode is off.", speech: "Hands-free mode is off." };
+      }
+
+      if (lower.includes("connect folder") || lower.includes("add connection")) {
+        setTab("connections");
+        connectFolder();
+        return { message: "I opened the folder connection flow.", speech: "I opened the folder connection flow." };
+      }
+
+      if ((lower.includes("summarize") || lower.includes("explain")) && lower.includes("file")) {
+        setTab("connections");
+        summarizeActiveFile();
+        return { message: "I summarized the selected file in the chat.", speech: "I summarized the selected file." };
+      }
+
       return null;
     }
 
@@ -809,7 +1032,7 @@
         body: JSON.stringify({
           model: "llama-3.1-8b-instant",
           messages: [
-            { role: "system", content: "You are Eryn, a natural voice assistant. Speak like a calm, capable person. Keep answers concise, practical, and conversational. Do not use emojis." },
+            { role: "system", content: "You are Eryn, a natural voice assistant. Speak like a calm, capable person. Keep answers concise, practical, and conversational. Do not use emojis. If code is needed, summarize what the code does first and keep code in the visual chat instead of reading every line aloud." },
             { role: "user", content: command }
           ],
           temperature: 0.6,
@@ -825,7 +1048,7 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `You are Eryn, a natural voice assistant. Keep this concise and conversational. Do not use emojis.\n\nUser: ${command}` }] }]
+          contents: [{ parts: [{ text: `You are Eryn, a natural voice assistant. Keep this concise and conversational. Do not use emojis. If code is needed, summarize what the code does first and keep code in the visual chat instead of reading every line aloud.\n\nUser: ${command}` }] }]
         })
       });
       const json = await parseJson(response);
@@ -859,23 +1082,23 @@
       const edgeMarkup = edges.map(([from, to]) => {
         const a = positioned.find(node => node.id === from);
         const b = positioned.find(node => node.id === to);
-        return `<path d="M ${a.x} ${a.y + 34} C ${a.x} ${(a.y + b.y) / 2}, ${b.x} ${(a.y + b.y) / 2}, ${b.x} ${b.y - 34}" fill="none" stroke="#3e5368" stroke-width="2" marker-end="url(#arrow)"/>`;
+        return `<path d="M ${a.x} ${a.y + 34} C ${a.x} ${(a.y + b.y) / 2}, ${b.x} ${(a.y + b.y) / 2}, ${b.x} ${b.y - 34}" fill="none" stroke="#7d5aa5" stroke-width="2" marker-end="url(#arrow)"/>`;
       }).join("");
       const nodeMarkup = positioned.map(node => `
         <g>
           <rect x="${node.x - 102}" y="${node.y - 34}" width="204" height="68" rx="8" fill="${node.color}" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
-          <text x="${node.x}" y="${node.y - 5}" text-anchor="middle" fill="#f2f7fb" font-size="15" font-family="Inter, Arial, sans-serif" font-weight="700">${escapeSvg(node.title)}</text>
-          <text x="${node.x}" y="${node.y + 17}" text-anchor="middle" fill="#c6d2dc" font-size="12" font-family="Inter, Arial, sans-serif">${escapeSvg(node.caption)}</text>
+          <text x="${node.x}" y="${node.y - 5}" text-anchor="middle" fill="#fbf4ff" font-size="15" font-family="Inter, Arial, sans-serif" font-weight="700">${escapeSvg(node.title)}</text>
+          <text x="${node.x}" y="${node.y + 17}" text-anchor="middle" fill="#d9c8ed" font-size="12" font-family="Inter, Arial, sans-serif">${escapeSvg(node.caption)}</text>
         </g>`).join("");
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Diagram of ${escapeSvg(topic)}">
         <defs>
           <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#3e5368"/>
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#7d5aa5"/>
           </marker>
         </defs>
-        <rect width="${width}" height="${height}" fill="#0d131a"/>
-        <text x="32" y="44" fill="#eef4f8" font-size="24" font-family="Inter, Arial, sans-serif" font-weight="800">${escapeSvg(titleCase(topic))}</text>
-        <text x="32" y="72" fill="#9fb0bd" font-size="14" font-family="Inter, Arial, sans-serif">Generated by Eryn</text>
+        <rect width="${width}" height="${height}" fill="#100b18"/>
+        <text x="32" y="44" fill="#f8efff" font-size="24" font-family="Inter, Arial, sans-serif" font-weight="800">${escapeSvg(titleCase(topic))}</text>
+        <text x="32" y="72" fill="#b8a8ca" font-size="14" font-family="Inter, Arial, sans-serif">Generated by Eryn</text>
         ${edgeMarkup}
         ${nodeMarkup}
       </svg>`;
@@ -905,7 +1128,7 @@
         id: `n${index}`,
         title: item[0],
         caption: item[1],
-        color: ["#19323a", "#203149", "#3b2d1d", "#263746", "#1e3a35"][index % 5]
+        color: ["#2a1740", "#30215a", "#422160", "#241a4c", "#3b244a"][index % 5]
       }));
     }
 
@@ -976,6 +1199,143 @@
       return text.replace(/^\s*(of|for|about)\s+/i, "").replace(/\s+please$/i, "").trim();
     }
 
+    function setHandsFree(enabled) {
+      state.handsFree = enabled;
+      els.handsFreeToggle.checked = enabled;
+      localStorage.setItem("eryn_hands_free", String(enabled));
+      setStatus(enabled ? "Hands-free" : "Ready");
+      if (enabled) scheduleListenRestart();
+      if (!enabled && state.recognition && state.listening) state.recognition.stop();
+    }
+
+    function scheduleListenRestart() {
+      if (!state.recognition || state.restarting || state.listening || state.speaking || !state.handsFree) return;
+      state.restarting = true;
+      window.setTimeout(() => {
+        state.restarting = false;
+        if (!state.handsFree || state.listening || state.speaking) return;
+        try {
+          state.recognition.start();
+        } catch (error) {
+          setStatus("Ready");
+        }
+      }, 650);
+    }
+
+    async function connectFolder() {
+      if (!("showDirectoryPicker" in window)) {
+        addMessage("error", "This browser does not support folder editing from a web page. Chrome or Edge can connect a folder. For bigger editing powers, use the local editing bridge.");
+        setTab("connections");
+        return;
+      }
+      try {
+        state.folderHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+        els.folderStatus.textContent = `Connected folder: ${state.folderHandle.name}.`;
+        await refreshFiles();
+        addMessage("eryn", `Connected ${state.folderHandle.name}. I can read and save files you choose from that folder.`);
+      } catch (error) {
+        addMessage("error", "Folder connection was cancelled or blocked.");
+      }
+    }
+
+    async function refreshFiles() {
+      if (!state.folderHandle) {
+        els.fileList.textContent = "Connect a folder to browse editable files.";
+        return;
+      }
+      state.fileHandles = [];
+      els.fileList.textContent = "Scanning files...";
+      await collectFiles(state.folderHandle, "");
+      renderFileList();
+    }
+
+    async function collectFiles(directoryHandle, prefix) {
+      for await (const [name, handle] of directoryHandle.entries()) {
+        if (name.startsWith(".") || name === "node_modules" || name === "dist") continue;
+        const path = prefix ? `${prefix}/${name}` : name;
+        if (handle.kind === "file" && isEditableFile(name)) {
+          state.fileHandles.push({ path, handle });
+        }
+        if (handle.kind === "directory" && state.fileHandles.length < 400) {
+          await collectFiles(handle, path);
+        }
+      }
+    }
+
+    function isEditableFile(name) {
+      return /\.(html|css|js|jsx|ts|tsx|json|md|txt|yml|yaml|toml|env|py|rb|go|rs|java|c|cpp|h|php|swift)$/i.test(name);
+    }
+
+    function renderFileList() {
+      els.fileList.innerHTML = "";
+      if (!state.fileHandles.length) {
+        els.fileList.textContent = "No editable files found in that folder.";
+        return;
+      }
+      state.fileHandles.slice(0, 400).forEach(file => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = file.path;
+        button.addEventListener("click", () => openConnectedFile(file));
+        els.fileList.appendChild(button);
+      });
+    }
+
+    async function openConnectedFile(fileRef) {
+      try {
+        const file = await fileRef.handle.getFile();
+        const text = await file.text();
+        state.activeFile = fileRef;
+        els.selectedFileInput.value = fileRef.path;
+        els.fileEditor.value = text;
+        addMessage("eryn", `Loaded ${fileRef.path}. I will summarize code instead of reading it aloud.`);
+      } catch (error) {
+        addMessage("error", `Could not open ${fileRef.path}.`);
+      }
+    }
+
+    async function saveActiveFile() {
+      if (!state.activeFile) {
+        addMessage("error", "Choose a connected file before saving.");
+        return;
+      }
+      try {
+        const writable = await state.activeFile.handle.createWritable();
+        await writable.write(els.fileEditor.value);
+        await writable.close();
+        addMessage("eryn", `Saved ${state.activeFile.path}.`);
+        speak(`Saved ${state.activeFile.path}.`);
+      } catch (error) {
+        addMessage("error", `Could not save ${state.activeFile.path}.`);
+      }
+    }
+
+    function summarizeActiveFile() {
+      if (!state.activeFile || !els.fileEditor.value.trim()) {
+        addMessage("error", "Choose a file first, then I can summarize it.");
+        return;
+      }
+      const summary = summarizeCode(els.fileEditor.value, state.activeFile.path);
+      addMessage("eryn", summary);
+      speak(summary);
+    }
+
+    function summarizeCode(text, path = "this file") {
+      const lines = text.split(/\r?\n/);
+      const nonEmpty = lines.filter(line => line.trim()).length;
+      const functions = [...text.matchAll(/\b(function|const|let|var|class|async function)\s+([A-Za-z0-9_$]+)/g)].map(match => match[2]).slice(0, 6);
+      const imports = lines.filter(line => /^\s*(import|const .*require\(|from\s+)/.test(line)).length;
+      const hasHtml = /<html|<body|<script|<style/i.test(text);
+      const hasApi = /fetch\(|axios|XMLHttpRequest|api/i.test(text);
+      const parts = [`${path} has ${lines.length} lines, with ${nonEmpty} non-empty lines.`];
+      if (hasHtml) parts.push("It includes page structure or browser UI code.");
+      if (imports) parts.push(`It has ${imports} import or dependency lines.`);
+      if (functions.length) parts.push(`Key named pieces include ${functions.join(", ")}.`);
+      if (hasApi) parts.push("It appears to talk to an API or network service.");
+      parts.push("I will keep code visible in chat or the editor and only read summaries out loud.");
+      return parts.join(" ");
+    }
+
     function saveKeys() {
       localStorage.setItem("eryn_groq_token", els.groqInput.value.trim());
       localStorage.setItem("eryn_gemini_token", els.geminiInput.value.trim());
@@ -995,19 +1355,47 @@
     function speak(text) {
       if (!("speechSynthesis" in window)) return;
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(cleanSpeech(text));
+      const utterance = new SpeechSynthesisUtterance(spokenVersion(text));
       const voice = state.voices.find(item => item.name === state.selectedVoice) || state.voices.sort((a, b) => scoreVoice(b) - scoreVoice(a))[0];
       if (voice) utterance.voice = voice;
       utterance.rate = Number(els.rateInput.value || 0.94);
       utterance.pitch = Number(els.pitchInput.value || 0.98);
       utterance.volume = 0.96;
-      utterance.onstart = () => setStatus("Speaking");
-      utterance.onend = () => setStatus("Ready");
+      utterance.onstart = () => {
+        state.speaking = true;
+        if (state.recognition && state.listening) state.recognition.stop();
+        setStatus("Speaking");
+      };
+      utterance.onend = () => {
+        state.speaking = false;
+        setStatus(state.handsFree ? "Hands-free" : "Ready");
+        if (state.handsFree) scheduleListenRestart();
+      };
+      utterance.onerror = () => {
+        state.speaking = false;
+        setStatus(state.handsFree ? "Hands-free" : "Ready");
+        if (state.handsFree) scheduleListenRestart();
+      };
       window.speechSynthesis.speak(utterance);
+    }
+
+    function spokenVersion(text) {
+      const clean = cleanSpeech(text);
+      const codeSignals = [
+        /```[\s\S]*```/,
+        /<\/?[a-z][\s\S]*>/i,
+        /\b(function|const|let|class|import|export|return|async|await)\b/g,
+        /[{;}]{4,}/
+      ];
+      const looksLikeCode = codeSignals.some(pattern => pattern.test(String(text))) || clean.length > 900;
+      if (!looksLikeCode) return clean;
+      const lineCount = String(text).split(/\r?\n/).length;
+      return `I put the code in the chat instead of reading it line by line. It is about ${lineCount} lines, and I can summarize or edit a specific part if you ask.`;
     }
 
     function cleanSpeech(text) {
       return String(text)
+        .replace(/```[\s\S]*?```/g, "code block")
         .replace(/[`*_#>~]/g, "")
         .replace(/\[(.*?)\]\(.*?\)/g, "$1")
         .replace(/\s+/g, " ")
