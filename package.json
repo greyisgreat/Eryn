@@ -1,0 +1,19 @@
+{
+  "name": "eryn-assistant",
+  "version": "2.0.0",
+  "description": "Eryn — Voice-first desktop assistant with full OS control",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "screenshot-desktop": "^1.12.7",
+    "clipboardy": "^3.0.0",
+    "systeminformation": "^5.21.22",
+    "open": "^9.1.0",
+    "ws": "^8.16.0"
+  }
+}
