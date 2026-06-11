@@ -1,155 +1,149 @@
+[README.md](https://github.com/user-attachments/files/28857570/README.md)
 # ERYN — Desktop AI Assistant v3.0
 
 Eryn is a voice-first desktop AI assistant with a Jarvis-style particle orb, smart search, intelligent app launching, and full OS control.
 
 ---
 
-## What's New in v3.0
+## ⚠️ IMPORTANT — Folder Setup
 
-- **Jarvis-style particle orb** — 4,500 particles + 6 rotating arc rings, much more visible and dramatic across all states (idle, listening, thinking, speaking)
-- **Smart search** — Say *"search for the new World Cup"* and Eryn extracts the meaningful query, not the filler words. Supports Google, YouTube, Reddit, Wikipedia auto-routing
-- **Smart site opening** — Say *"open chatgpt"* / *"open YouTube"* / *"open figma"* and it opens in your actual browser — not a list, not a tab preview. 100+ sites supported
-- **Better app launching** — Eryn scans your actual installed apps on Windows (Start Menu + Program Files) and Mac (/Applications). Say *"open Cursor"*, *"open Warp"*, *"open OBS"* — anything installed works
-- **App actions** — Control Spotify (play/pause/next/previous), minimize all windows, show desktop, and more
-- **Smarter open routing** — Eryn intelligently decides: is this a website or a desktop app? Opens the right one automatically
+**The folder MUST be named `eryn` and placed directly on your Desktop.**
+
+```
+Windows:   C:\Users\YourName\Desktop\eryn\
+Mac:       /Users/YourName/Desktop/eryn/
+```
+
+If the folder is named anything else or placed anywhere else, the launcher scripts will not work.
 
 ---
 
 ## Quick Start
 
-### Requirements
-- [Node.js](https://nodejs.org) v18+
-- Chrome or Edge (for voice recognition)
+### Step 1 — Make sure the folder is set up correctly
 
-### Install & Run
+Your Desktop should look like this:
+
+```
+Desktop/
+└── eryn/
+    ├── server.js
+    ├── package.json
+    ├── start-eryn.bat     ← Windows
+    ├── start-eryn.sh      ← Mac / Linux
+    └── public/
+        ├── index.html
+        ├── orb.js
+        ├── brain.js
+        └── diagrams.js
+```
+
+### Step 2 — Install Node.js (if you haven't already)
+
+Download and install Node.js v18 or newer from: https://nodejs.org
+
+### Step 3 — Launch Eryn
 
 **Windows:**
-```
-Double-click start-eryn.bat
+Double-click `start-eryn.bat` inside the `eryn` folder on your Desktop.
+
+**Mac:**
+Open Terminal (press `Cmd + Space`, type Terminal, hit Enter), then run these two commands:
+
+```bash
+chmod +x ~/Desktop/eryn/start-eryn.sh
+~/Desktop/eryn/start-eryn.sh
 ```
 
-**Mac / Linux:**
-```bash
-chmod +x start-eryn.sh
-./start-eryn.sh
-```
+The first command only needs to be run once. After that you can just run the second line each time.
 
-**Manual:**
+**Or manually from any terminal (Windows, Mac, or Linux):**
 ```bash
+cd ~/Desktop/eryn
 npm install
 node server.js
 ```
 
-Then open **http://localhost:3000** in Chrome or Edge.
+### Step 4 — Open in your browser
+
+Once the server is running, open **http://localhost:3000** in Chrome or Edge.
+
+> Voice recognition requires Chrome or Edge. It will not work in Firefox or Safari.
 
 ---
 
 ## API Keys (Required for AI responses)
 
-Eryn needs at least one AI API key to answer questions:
+Eryn needs at least one AI API key to answer questions. Without a key it can still open apps, search, and run commands — but won't give AI responses.
 
-1. Open Eryn → click the **⚙ Settings** tab (right panel)
-2. Paste your **Groq API key** (free at [console.groq.com](https://console.groq.com)) — recommended, very fast
-3. Or paste a **Gemini API key** (free at [aistudio.google.com](https://aistudio.google.com))
-4. Click **Save Keys**
+1. Open Eryn at http://localhost:3000
+2. Click the **Settings** tab in the right panel
+3. Paste your **Groq API key** — free at https://console.groq.com (recommended, very fast)
+4. Or paste a **Gemini API key** — free at https://aistudio.google.com
+5. Click **Save Keys**
 
 ---
 
 ## Voice Commands
 
 ### Search
-| Say | Does |
-|-----|------|
-| `search for the new World Cup` | Googles "World Cup" (strips filler) |
+| Say | What Eryn does |
+|-----|----------------|
+| `search for the new World Cup` | Googles "new World Cup" — strips the filler |
 | `search for how to make pasta` | Googles "how to make pasta" |
 | `look up GPT-5` | Googles "GPT-5" |
 | `search YouTube for lofi beats` | YouTube search |
 | `find videos about space` | YouTube search |
+| `search Reddit for best headphones` | Reddit search |
 
-### Open Sites
-| Say | Does |
-|-----|------|
+### Open Websites
+| Say | What Eryn does |
+|-----|----------------|
 | `open YouTube` | Opens youtube.com in your browser |
 | `open ChatGPT` | Opens chatgpt.com in your browser |
 | `open GitHub` | Opens github.com in your browser |
 | `go to Figma` | Opens figma.com |
-| `open netflix` | Opens netflix.com |
-| Any of 100+ sites... | Opens the real URL in your default browser |
+| `open Netflix` | Opens netflix.com |
+| `open Discord` | Opens discord.com |
 
-### Open Apps
-| Say | Does |
-|-----|------|
+100+ sites are supported including Google Suite, AI tools, dev tools, streaming services, social media, shopping, news, and design tools.
+
+### Open Desktop Apps
+| Say | What Eryn does |
+|-----|----------------|
 | `open VS Code` | Launches VS Code |
 | `open Spotify` | Launches Spotify |
-| `open Discord` | Launches Discord |
-| `open Terminal` | Launches Terminal / CMD |
+| `open Terminal` | Launches Terminal or CMD |
 | `open Blender` | Launches Blender |
 | `launch Cursor` | Launches Cursor AI editor |
-| `open [any app name]` | Searches your installed apps and opens it |
+| `open [any app name]` | Finds it in your installed apps and opens it |
 
 ### App Actions
-| Say | Does |
-|-----|------|
+| Say | What Eryn does |
+|-----|----------------|
 | `Spotify play` | Plays current track |
 | `Spotify pause` | Pauses |
 | `Spotify next` | Next track |
 | `Spotify previous` | Previous track |
 | `show desktop` | Minimizes all windows |
-| `minimize all` | Minimizes all windows |
 
-### System
-| Say | Does |
-|-----|------|
-| `volume up / down / mute` | Controls system volume |
-| `run [shell command]` | Runs any terminal command |
-| `read clipboard` | Reads clipboard contents |
-| `take a screenshot` | Captures the screen |
-| `system info` | Shows CPU, RAM, disk |
+### System Control
+| Say | What Eryn does |
+|-----|----------------|
+| `volume up` / `volume down` | Adjusts system volume |
+| `mute volume` | Mutes audio |
+| `run [any terminal command]` | Executes a shell command |
+| `read clipboard` | Reads what's on your clipboard |
+| `take a screenshot` | Captures your screen |
+| `system info` | Shows CPU, RAM, and disk usage |
 
 ### Other
-| Say | Does |
-|-----|------|
-| `make a diagram of [topic]` | Generates SVG diagram |
-| `show map of [place]` | Embedded Google Maps |
-| `close [app]` | Kills a running app |
-| `hands-free on/off` | Toggles always-listening mode |
-
----
-
-## Architecture
-
-```
-eryn/
-├── server.js          ← Node.js backend (Express + WebSocket)
-├── package.json
-├── start-eryn.bat     ← Windows launcher
-├── start-eryn.sh      ← Mac/Linux launcher
-└── public/
-    ├── index.html     ← Main UI + all frontend logic
-    ├── orb.js         ← Three.js particle orb (Jarvis-style, v3)
-    ├── brain.js       ← Conversation history + session memory
-    └── diagrams.js    ← SVG diagram generator
-```
-
-### How Smart Open Works
-
-1. You say *"open YouTube"*
-2. Eryn checks if it's a known website (100+ in the map) → yes → calls `/api/browser/open` on the server → your OS opens `youtube.com` in your default browser
-3. If not a known site, checks if it's a bare domain (e.g. `myapp.io`) → opens that
-4. If it looks like a desktop app name → calls `/api/app/open` → server resolves the launch command for your OS → app launches
-
-### How Smart Search Works
-
-1. You say *"search for the new World Cup results"*
-2. Eryn strips: `search for the` → leaves: `new World Cup results`
-3. Detects engine: mentions "YouTube"? → YouTube URL. Mentions "Reddit"? → Reddit URL. Default → Google
-4. Opens the actual search URL in your browser
-
----
-
-## Deploy to GitHub Pages (UI only)
-
-The UI works in browser-only mode (no app launching, no shell). Push the `public/` folder to a GitHub Pages repo.
+| Say | What Eryn does |
+|-----|----------------|
+| `make a diagram of [topic]` | Generates a visual SVG diagram |
+| `show map of [place]` | Shows an embedded Google Maps view |
+| `close [app name]` | Kills a running application |
+| `hands-free on` / `hands-free off` | Toggles always-listening mode |
 
 ---
 
@@ -157,9 +151,28 @@ The UI works in browser-only mode (no app launching, no shell). Push the `public
 
 | Problem | Fix |
 |---------|-----|
-| No voice recognition | Use Chrome or Edge. Check microphone permissions |
-| Server offline | Run `node server.js` in the eryn folder |
-| App won't open | Make sure the app is installed. Try the exact name it shows in your Start Menu / Applications folder |
-| No AI responses | Add a Groq or Gemini API key in Settings |
-| Pop-up blocked | Allow pop-ups for localhost:3000 in your browser |
+| `start-eryn.bat` or `start-eryn.sh` does nothing | Make sure the folder is named `eryn` and is on your Desktop |
+| "Node is not recognized" | Install Node.js from https://nodejs.org then try again |
+| Server shows offline in Eryn | Run `node server.js` manually from inside the eryn folder |
+| No voice recognition | Use Chrome or Edge. Allow microphone access when prompted |
+| App won't open | Make sure the app is installed. Use the exact name shown in your Start Menu or Applications folder |
+| No AI responses | Add a Groq or Gemini API key in the Settings tab |
+| Pop-up blocked | Allow pop-ups for localhost:3000 in your browser settings |
+| Page won't load | Make sure the server is running and go to http://localhost:3000 |
 
+---
+
+## File Structure
+
+```
+eryn/                        ← Must be named exactly "eryn"
+├── server.js                ← Backend server (Node.js)
+├── package.json             ← Dependencies
+├── start-eryn.bat           ← Windows one-click launcher
+├── start-eryn.sh            ← Mac/Linux one-click launcher
+└── public/
+    ├── index.html           ← Full UI and frontend logic
+    ├── orb.js               ← Jarvis-style particle orb (Three.js)
+    ├── brain.js             ← Conversation memory and session history
+    └── diagrams.js          ← SVG diagram generator
+```
