@@ -1,0 +1,1892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eryn — Desktop Assistant</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="orb.js"></script>
+  <script src="brain.js"></script>
+  <script src="diagrams.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+    :root {
+      --bg:        #0E0F13;
+      --teal:      #2DD4A8;
+      --teal-dim:  rgba(45,212,168,0.15);
+      --teal-glow: rgba(45,212,168,0.5);
+      --surface:   rgba(14,15,19,0.15);
+      --glass:     rgba(22,23,29,0.78);
+      --border:    rgba(255,255,255,0.06);
+      --text:      #eef4f8;
+      --muted:     rgba(255,255,255,0.4);
+      --danger:    #ff6b6b;
+      --radius:    12px;
+      font-family: 'DM Sans', system-ui, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); }
+
+    #bg-canvas { position:fixed; inset:0; z-index:1; pointer-events:none; }
+
+    /* ── SHELL ── */
+    #shell { position:fixed; inset:0; z-index:10; pointer-events:none; display:flex; flex-direction:column; }
+
+    /* ── HEADER ── */
+    #header {
+      pointer-events:all; height:54px;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 20px;
+      background:rgba(14,15,19,0.18); backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--border); flex-shrink:0;
+    }
+    .wordmark { display:flex; align-items:center; gap:8px; font-family:'Space Mono',monospace; font-size:1.05rem; font-weight:700; letter-spacing:0.05em; }
+    .wordmark-dot { width:7px; height:7px; border-radius:50%; background:var(--teal); box-shadow:0 0 8px var(--teal); }
+
+    .header-center { display:flex; align-items:center; gap:10px; }
+    .server-badge {
+      display:flex; align-items:center; gap:5px;
+      background:rgba(0,0,0,0.3); border:1px solid var(--border);
+      border-radius:999px; padding:3px 10px;
+      font-size:0.7rem; font-family:'Space Mono',monospace; color:var(--muted);
+      transition:all 0.3s;
+    }
+    .server-badge.online { border-color:rgba(45,212,168,0.3); color:var(--teal); }
+    .server-badge-dot { width:6px; height:6px; border-radius:50%; background:#555; }
+    .server-badge.online .server-badge-dot { background:var(--teal); box-shadow:0 0 6px var(--teal); }
+
+    .sysinfo { font-size:0.68rem; color:var(--muted); font-family:'Space Mono',monospace; display:flex; gap:12px; }
+    .sysinfo span { opacity:0.7; }
+
+    .header-right { display:flex; align-items:center; gap:6px; }
+
+    .ghost-btn {
+      width:34px; height:34px; border-radius:8px;
+      border:1px solid var(--border); background:var(--surface);
+      backdrop-filter:blur(14px); color:var(--muted);
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      transition:all 0.2s; position:relative;
+    }
+    .ghost-btn:hover { border-color:var(--teal); color:var(--teal); background:var(--teal-dim); }
+    .ghost-btn svg { width:15px; height:15px; }
+
+    .status-dot { width:9px; height:9px; border-radius:50%; background:#444; transition:all 0.4s; }
+    .status-dot.listening { background:var(--teal); box-shadow:0 0 10px var(--teal); animation:dot-pulse 1.4s infinite; }
+    .status-dot.thinking  { background:#806bff; box-shadow:0 0 10px #806bff; animation:dot-pulse 0.8s infinite; }
+    .status-dot.speaking  { background:var(--teal); box-shadow:0 0 12px var(--teal-glow); }
+
+    /* ── MID ROW ── */
+    #mid-row { flex:1; display:flex; overflow:hidden; pointer-events:none; }
+
+    /* ── ACTIVITY PANEL ── */
+    #activity-panel {
+      pointer-events:all; width:0; overflow:hidden;
+      transition:width 0.35s cubic-bezier(0.16,1,0.3,1);
+      background:rgba(14,15,19,0.18); backdrop-filter:blur(14px);
+      border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0;
+    }
+    #activity-panel.open { width:240px; }
+    .panel-section { padding:12px 14px 8px; border-bottom:1px solid var(--border); }
+    .panel-section-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .panel-section-title { font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); }
+    .panel-count { font-size:9.5px; color:var(--teal); font-family:'Space Mono',monospace; }
+    .panel-entry {
+      padding:7px 9px; border-radius:7px; border:1px solid transparent;
+      margin-bottom:3px; cursor:pointer; transition:all 0.15s;
+      font-size:0.79rem; line-height:1.35; color:var(--text);
+    }
+    .panel-entry:hover { background:var(--teal-dim); border-color:rgba(45,212,168,0.2); }
+    .panel-entry-sub { font-size:0.7rem; color:var(--muted); margin-top:2px; }
+
+    /* ── CENTER ── */
+    #center-area { flex:1; display:flex; align-items:center; justify-content:center; pointer-events:none; position:relative; }
+    #response-cards { position:absolute; inset:0; pointer-events:none; }
+
+    .response-card {
+      pointer-events:all; position:absolute;
+      width:220px; background:var(--glass); backdrop-filter:blur(16px);
+      border:1px solid var(--border); border-top:2px solid var(--teal);
+      border-radius:var(--radius); padding:12px 14px;
+      font-size:0.82rem; line-height:1.5;
+      box-shadow:0 8px 32px rgba(0,0,0,0.45);
+      animation:card-in 0.4s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    .card-label { font-size:0.67rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--teal); margin-bottom:5px; font-weight:700; }
+    .card-close { position:absolute; top:7px; right:7px; width:18px; height:18px; border-radius:4px; border:none; background:transparent; color:var(--muted); cursor:pointer; font-size:11px; display:flex; align-items:center; justify-content:center; }
+    .card-close:hover { color:var(--text); }
+
+    /* ── RIGHT PANEL ── */
+    #right-panel {
+      pointer-events:all; width:390px;
+      background:rgba(14,15,19,0.18); backdrop-filter:blur(14px);
+      border-left:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0;
+    }
+
+    #ws-tabs {
+      display:flex; gap:1px; padding:7px 7px 0;
+      border-bottom:1px solid var(--border); background:rgba(0,0,0,0.12); flex-shrink:0;
+      overflow-x:auto; scrollbar-width:none;
+    }
+    #ws-tabs::-webkit-scrollbar { display:none; }
+    .ws-tab {
+      padding:5px 11px; border-radius:7px 7px 0 0; border:1px solid transparent;
+      background:transparent; color:var(--muted); cursor:pointer; font-size:0.76rem;
+      font-weight:500; transition:all 0.15s; font-family:'DM Sans',sans-serif; white-space:nowrap;
+    }
+    .ws-tab.active { color:var(--text); background:rgba(22,23,29,0.8); border-color:var(--border); border-bottom-color:transparent; }
+    .ws-tab:hover:not(.active) { color:var(--text); }
+
+    .ws-panel { display:none; flex:1; overflow:hidden; flex-direction:column; }
+    .ws-panel.active { display:flex; }
+
+    /* ── CHAT ── */
+    #transcript {
+      flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:8px;
+      scrollbar-width:thin; scrollbar-color:rgba(45,212,168,0.2) transparent;
+    }
+    .msg {
+      border-radius:9px; padding:9px 11px; font-size:0.82rem; line-height:1.5;
+      border:1px solid var(--border); background:rgba(14,15,19,0.65);
+      animation:msg-in 0.22s ease both;
+    }
+    .msg strong { display:block; font-size:0.67rem; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:3px; color:var(--teal); }
+    .msg.user strong  { color:rgba(255,255,255,0.55); }
+    .msg.system strong { color:var(--muted); }
+    .msg.error  { border-color:rgba(255,107,107,0.3); }
+    .msg.error strong { color:var(--danger); }
+    .msg .msg-time { font-size:0.62rem; color:var(--muted); margin-top:4px; }
+
+    /* ── HISTORY ── */
+    #history-container { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:8px; }
+    .history-session {
+      border:1px solid var(--border); border-radius:var(--radius);
+      background:rgba(14,15,19,0.6); overflow:hidden;
+    }
+    .history-session-header {
+      padding:10px 12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;
+      transition:background 0.15s;
+    }
+    .history-session-header:hover { background:var(--teal-dim); }
+    .history-session-title { font-size:0.8rem; font-weight:600; color:var(--text); }
+    .history-session-meta  { font-size:0.68rem; color:var(--muted); margin-top:2px; }
+    .history-session-body  { display:none; padding:0 12px 10px; border-top:1px solid var(--border); }
+    .history-session-body.open { display:block; }
+    .history-msg { padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:0.77rem; line-height:1.4; }
+    .history-msg:last-child { border-bottom:none; }
+    .history-msg-role { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.07em; color:var(--teal); margin-bottom:2px; }
+    .history-msg-role.user { color:rgba(255,255,255,0.5); }
+    .history-actions { display:flex; gap:6px; margin-top:8px; }
+
+    /* ── DIAGRAM ── */
+    #diagram-container { flex:1; overflow:auto; padding:12px; }
+    #diagram-board { border:1px solid var(--border); border-radius:var(--radius); background:rgba(14,15,19,0.85); min-height:400px; overflow:hidden; }
+    #diagram-board svg { width:100%; display:block; }
+    .board-empty { min-height:400px; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:0.82rem; text-align:center; padding:24px; flex-direction:column; gap:8px; }
+    .board-empty span { font-size:0.7rem; opacity:0.6; }
+
+    /* ── MAP ── */
+    #map-container { flex:1; padding:12px; display:flex; flex-direction:column; gap:8px; }
+    #map-board { border:1px solid var(--border); border-radius:var(--radius); flex:1; overflow:hidden; }
+    #map-board iframe { width:100%; height:100%; border:0; display:block; }
+
+    /* ── DESKTOP CONTROL ── */
+    #desktop-container { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px; }
+    .desktop-card { border:1px solid var(--border); border-radius:var(--radius); padding:12px; background:rgba(14,15,19,0.65); }
+    .desktop-card h4 { font-size:0.78rem; font-weight:700; color:var(--teal); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px; }
+    .app-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+    .app-btn { flex-direction:column; gap:3px; padding:8px 4px; font-size:0.7rem; text-align:center; border-radius:8px; cursor:pointer; }
+    .app-btn svg { width:18px; height:18px; }
+    .shell-output { font-family:'Space Mono',monospace; font-size:0.72rem; background:rgba(0,0,0,0.5); border:1px solid var(--border); border-radius:8px; padding:8px; max-height:150px; overflow-y:auto; color:rgba(45,212,168,0.85); white-space:pre-wrap; word-break:break-all; margin-top:8px; }
+
+    /* ── FILES ── */
+    #connections-container { flex:1; overflow-y:auto; padding:12px; }
+    .conn-card { border:1px solid var(--border); border-radius:var(--radius); padding:12px; background:rgba(14,15,19,0.65); margin-bottom:10px; }
+    .conn-card h4 { font-size:0.78rem; font-weight:700; color:var(--text); margin-bottom:6px; }
+    .conn-status { font-size:0.73rem; color:var(--muted); margin-bottom:8px; line-height:1.4; }
+    .conn-status.ok { color:var(--teal); }
+    .file-list-box { border:1px solid var(--border); border-radius:8px; background:rgba(0,0,0,0.3); min-height:100px; max-height:180px; overflow-y:auto; padding:7px; margin-top:7px; }
+
+    /* ── SETTINGS ── */
+    #settings-container { flex:1; overflow-y:auto; padding:12px; }
+    .settings-card { border:1px solid var(--border); border-radius:var(--radius); padding:12px; background:rgba(14,15,19,0.65); margin-bottom:10px; }
+    .settings-card h3 { font-size:0.78rem; font-weight:700; color:var(--teal); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px; }
+
+    label.field { display:flex; flex-direction:column; gap:4px; margin-bottom:9px; }
+    .field-label { font-size:0.72rem; color:var(--muted); }
+    input[type="text"], input[type="password"], textarea, select {
+      width:100%; background:rgba(0,0,0,0.4); border:1px solid var(--border);
+      color:var(--text); border-radius:8px; padding:8px 10px; font:inherit; outline:none; transition:border-color 0.2s;
+    }
+    input:focus, textarea:focus, select:focus { border-color:var(--teal); box-shadow:0 0 0 3px rgba(45,212,168,0.1); }
+    input[type="range"] { width:100%; accent-color:var(--teal); background:transparent; border:none; padding:4px 0; }
+
+    /* ── BUTTONS ── */
+    button {
+      font-family:'DM Sans',sans-serif; font-size:0.79rem; border-radius:8px;
+      border:1px solid var(--border); background:rgba(255,255,255,0.06);
+      color:var(--text); padding:7px 12px; cursor:pointer;
+      transition:all 0.15s; display:inline-flex; align-items:center; gap:5px;
+    }
+    button:hover { border-color:var(--teal); background:var(--teal-dim); color:var(--teal); }
+    button.primary { background:var(--teal); border-color:var(--teal); color:#0E0F13; font-weight:700; }
+    button.primary:hover { background:#38f5c0; color:#0E0F13; }
+    button.danger  { border-color:rgba(255,107,107,0.3); color:rgba(255,107,107,0.8); }
+    button.danger:hover { background:rgba(255,107,107,0.12); border-color:var(--danger); color:var(--danger); }
+    .btn-row { display:flex; gap:6px; flex-wrap:wrap; margin-top:7px; }
+
+    /* ── MIC BAR ── */
+    #mic-bar {
+      pointer-events:none; position:fixed; bottom:0; left:0; right:0; z-index:20;
+      display:flex; flex-direction:column; align-items:center; padding-bottom:24px; gap:8px;
+    }
+    #mic-btn {
+      pointer-events:all; width:60px; height:60px; border-radius:50%;
+      border:1px solid rgba(255,255,255,0.08); background:#16171D;
+      color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+      position:relative; transition:all 0.2s;
+    }
+    #mic-btn::before {
+      content:""; position:absolute; inset:-4px; border-radius:50%;
+      border:2px solid transparent; pointer-events:none; transition:all 0.3s;
+    }
+    #mic-btn.listening { border-color:var(--teal); box-shadow:0 0 24px var(--teal-glow); }
+    #mic-btn.listening::before { border-color:rgba(45,212,168,0.35); animation:mic-pulse 1.4s cubic-bezier(0.16,1,0.3,1) infinite; }
+    #mic-hint { pointer-events:none; font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.35); font-family:'Space Mono',monospace; }
+
+    /* ── CMD BAR ── */
+    #cmd-bar {
+      pointer-events:all; display:flex; gap:7px; align-items:flex-end;
+      padding:9px 12px; border-top:1px solid var(--border);
+      background:rgba(14,15,19,0.45); backdrop-filter:blur(14px); flex-shrink:0;
+    }
+    #cmd-input {
+      flex:1; background:rgba(0,0,0,0.4); border:1px solid var(--border); border-radius:9px;
+      padding:8px 11px; color:var(--text); font:inherit; outline:none; resize:none;
+      font-size:0.82rem; line-height:1.4; min-height:38px; max-height:110px; transition:border-color 0.2s;
+    }
+    #cmd-input:focus { border-color:var(--teal); }
+
+    /* ── HF BADGE ── */
+    #hf-badge {
+      display:none; position:fixed; top:64px; left:50%; transform:translateX(-50%); z-index:30;
+      background:var(--teal-dim); border:1px solid rgba(45,212,168,0.3); border-radius:999px;
+      padding:4px 13px; font-size:0.72rem; color:var(--teal);
+      font-family:'Space Mono',monospace; letter-spacing:0.06em; pointer-events:none;
+    }
+    #hf-badge.visible { display:block; }
+
+    /* ── CAPS MODAL ── */
+    #caps-modal {
+      display:none; position:fixed; inset:0; z-index:100;
+      background:rgba(0,0,0,0.72); backdrop-filter:blur(8px);
+      align-items:center; justify-content:center;
+    }
+    #caps-modal.open { display:flex; }
+    .modal-box {
+      background:rgba(22,23,29,0.97); border:1px solid var(--border);
+      border-top:2px solid var(--teal); border-radius:16px; padding:26px;
+      max-width:540px; width:92%; max-height:80vh; overflow-y:auto;
+    }
+    .modal-box h2 { font-family:'Space Mono',monospace; font-size:0.95rem; color:var(--teal); margin-bottom:14px; }
+    .cap-group { margin-bottom:14px; }
+    .cap-group h4 { font-size:0.7rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin-bottom:7px; }
+    .cap-item { display:flex; gap:9px; align-items:flex-start; margin-bottom:5px; font-size:0.8rem; line-height:1.4; }
+    .cap-dot { width:5px; height:5px; border-radius:50%; background:var(--teal); margin-top:5px; flex-shrink:0; }
+
+    /* ── THINKING INDICATOR ── */
+    .thinking-dots { display:inline-flex; gap:3px; margin-left:4px; }
+    .thinking-dots span {
+      width:4px; height:4px; border-radius:50%; background:var(--teal);
+      animation:dot-pulse 1.2s ease-in-out infinite;
+    }
+    .thinking-dots span:nth-child(2) { animation-delay:0.2s; }
+    .thinking-dots span:nth-child(3) { animation-delay:0.4s; }
+
+    /* ── KEYFRAMES ── */
+    @keyframes mic-pulse { 0%{transform:scale(1);opacity:1} 70%{transform:scale(1.35);opacity:0} 100%{transform:scale(1.35);opacity:0} }
+    @keyframes dot-pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:0.6} }
+    @keyframes card-in { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes msg-in  { from{opacity:0;transform:translateY(5px)}  to{opacity:1;transform:translateY(0)} }
+    @keyframes float-card { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+    @keyframes slide-in { from{opacity:0;transform:translateX(14px)} to{opacity:1;transform:translateX(0)} }
+
+    ::-webkit-scrollbar { width:4px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:rgba(45,212,168,0.18); border-radius:4px; }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div id="hf-badge">HANDS-FREE ACTIVE</div>
+
+<div id="shell">
+  <header id="header">
+    <div class="wordmark"><span>Eryn</span><div class="wordmark-dot"></div></div>
+
+    <div class="header-center">
+      <div class="server-badge" id="server-badge">
+        <div class="server-badge-dot"></div>
+        <span id="server-badge-text">Server offline</span>
+      </div>
+      <div class="sysinfo" id="sysinfo" style="display:none;">
+        <span id="cpu-info">CPU –</span>
+        <span id="mem-info">MEM –</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button class="ghost-btn" id="caps-btn" title="Capabilities">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </button>
+      <button class="ghost-btn" id="activity-toggle" title="Activity panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </button>
+      <button class="ghost-btn" id="hf-toggle-btn" title="Hands-free">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
+      <div class="status-dot" id="status-dot"></div>
+    </div>
+  </header>
+
+  <div id="mid-row">
+    <!-- ACTIVITY PANEL -->
+    <div id="activity-panel">
+      <div class="panel-section">
+        <div class="panel-section-header"><span class="panel-section-title">Quick Commands</span></div>
+        <div id="quick-commands"></div>
+      </div>
+      <div class="panel-section" style="flex:1;overflow-y:auto;">
+        <div class="panel-section-header">
+          <span class="panel-section-title">Recent</span>
+          <span class="panel-count" id="recent-count">0</span>
+        </div>
+        <div id="recent-list"></div>
+      </div>
+    </div>
+
+    <!-- CENTER -->
+    <div id="center-area">
+      <div id="response-cards"></div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div id="right-panel">
+      <div id="ws-tabs">
+        <button class="ws-tab active" data-panel="chat">Chat</button>
+        <button class="ws-tab" data-panel="history">History</button>
+        <button class="ws-tab" data-panel="desktop">Desktop</button>
+        <button class="ws-tab" data-panel="diagram">Diagram</button>
+        <button class="ws-tab" data-panel="map">Map</button>
+        <button class="ws-tab" data-panel="connections">Files</button>
+        <button class="ws-tab" data-panel="settings">Settings</button>
+      </div>
+
+      <!-- CHAT -->
+      <div class="ws-panel active" id="panel-chat">
+        <div id="transcript"></div>
+        <div id="cmd-bar">
+          <textarea id="cmd-input" rows="1" placeholder="Ask or command Eryn…"></textarea>
+          <button class="primary" id="send-btn">Send</button>
+        </div>
+      </div>
+
+      <!-- HISTORY -->
+      <div class="ws-panel" id="panel-history">
+        <div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;">
+          <button id="new-session-btn" class="primary" style="flex:1;justify-content:center;">+ New Session</button>
+          <button id="clear-history-btn" class="danger">Clear All</button>
+        </div>
+        <div id="history-container"></div>
+      </div>
+
+      <!-- DESKTOP CONTROL -->
+      <div class="ws-panel" id="panel-desktop">
+        <div id="desktop-container">
+          <div class="desktop-card">
+            <h4>Launch App</h4>
+            <div class="app-grid" id="app-grid"></div>
+          </div>
+          <div class="desktop-card">
+            <h4>Close App</h4>
+            <div style="display:flex;gap:7px;align-items:center;">
+              <input type="text" id="close-app-input" placeholder="App name (e.g. spotify)" style="flex:1;">
+              <button id="close-app-btn" class="danger">Kill</button>
+            </div>
+          </div>
+          <div class="desktop-card">
+            <h4>Shell Command</h4>
+            <div style="display:flex;gap:7px;align-items:center;">
+              <input type="text" id="shell-input" placeholder="e.g. ls ~ or dir" style="flex:1;" id="shell-cmd-input">
+              <button id="shell-run-btn" class="primary">Run</button>
+            </div>
+            <div class="shell-output" id="shell-output" style="display:none;"></div>
+          </div>
+          <div class="desktop-card">
+            <h4>System Info</h4>
+            <div id="sys-info-display" style="font-size:0.75rem;color:var(--muted);line-height:1.8;font-family:'Space Mono',monospace;"></div>
+            <button id="refresh-sysinfo-btn" style="margin-top:8px;font-size:0.72rem;">Refresh</button>
+          </div>
+          <div class="desktop-card">
+            <h4>Clipboard</h4>
+            <div class="btn-row">
+              <button id="clip-read-btn">Read Clipboard</button>
+              <button id="clip-write-btn">Write to Clipboard</button>
+            </div>
+            <textarea id="clip-content" rows="3" placeholder="Clipboard content…" style="margin-top:8px;font-size:0.75rem;"></textarea>
+          </div>
+          <div class="desktop-card">
+            <h4>Volume</h4>
+            <div class="btn-row">
+              <button id="vol-up-btn">▲ Up</button>
+              <button id="vol-down-btn">▼ Down</button>
+              <button id="vol-mute-btn">Mute</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIAGRAM -->
+      <div class="ws-panel" id="panel-diagram">
+        <div id="diagram-container">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;">
+            <span style="font-size:0.78rem;color:var(--muted);" id="diagram-title">No diagram yet</span>
+            <button id="dl-diagram-btn" style="font-size:0.72rem;padding:5px 9px;">Download SVG</button>
+          </div>
+          <div id="diagram-board">
+            <div class="board-empty">
+              Ask Eryn to make a diagram<br>
+              <span>e.g. "make a diagram of my login flow"</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAP -->
+      <div class="ws-panel" id="panel-map">
+        <div id="map-container">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:0.78rem;color:var(--muted);" id="map-title">No map loaded</span>
+            <button id="open-map-tab-btn" style="font-size:0.72rem;padding:5px 9px;">Open in Maps</button>
+          </div>
+          <div id="map-board">
+            <div class="board-empty">Ask Eryn to show a map</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILES -->
+      <div class="ws-panel" id="panel-connections">
+        <div id="connections-container">
+          <div class="conn-card">
+            <h4>Local Folder</h4>
+            <p class="conn-status" id="folder-status">Not connected.</p>
+            <button id="connect-folder-btn">Connect Folder</button>
+            <div class="file-list-box" id="file-list" style="display:none;"></div>
+          </div>
+          <div class="conn-card">
+            <h4>GitHub</h4>
+            <p class="conn-status" id="github-status">Add token and repo to push commits.</p>
+            <label class="field"><span class="field-label">Personal Access Token</span><input type="password" id="github-token-input" placeholder="ghp_…" autocomplete="off"></label>
+            <label class="field"><span class="field-label">Repo (owner/repo)</span><input type="text" id="github-repo-input" placeholder="username/my-repo"></label>
+            <div class="btn-row">
+              <button id="github-save-btn" class="primary">Save</button>
+              <button id="github-push-btn">Push commit</button>
+              <button id="github-read-btn">Read README</button>
+            </div>
+            <div id="github-result" style="display:none;border-left:2px solid var(--teal);padding-left:9px;margin-top:8px;font-size:0.75rem;color:var(--muted);"></div>
+          </div>
+          <div class="conn-card">
+            <h4>File Editor</h4>
+            <label class="field"><span class="field-label">Selected file</span><input type="text" id="selected-file-input" readonly placeholder="No file selected"></label>
+            <label class="field"><span class="field-label">Content</span><textarea id="file-editor" rows="8" placeholder="File content appears here."></textarea></label>
+            <div class="btn-row">
+              <button id="save-file-btn" class="primary">Save File</button>
+              <button id="summarize-file-btn">Summarize</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="ws-panel" id="panel-settings">
+        <div id="settings-container">
+          <div class="settings-card">
+            <h3>AI Keys</h3>
+            <label class="field"><span class="field-label">Groq API Key (free — console.groq.com)</span><input type="password" id="groq-input" autocomplete="off" placeholder="gsk_…"></label>
+            <label class="field"><span class="field-label">Gemini API Key (free — aistudio.google.com)</span><input type="password" id="gemini-input" autocomplete="off" placeholder="AIza…"></label>
+            <div class="btn-row">
+              <button class="primary" id="save-keys-btn">Save Keys</button>
+              <button class="danger" id="clear-keys-btn">Clear Keys</button>
+            </div>
+            <p style="font-size:0.7rem;color:var(--muted);margin-top:7px;">Stored in this browser only. Sent only to official API endpoints.</p>
+          </div>
+          <div class="settings-card">
+            <h3>Voice</h3>
+            <label class="field"><span class="field-label">Voice</span><select id="voice-select"></select></label>
+            <label class="field"><span class="field-label">Speed</span><input type="range" id="rate-input" min="0.7" max="1.2" step="0.01" value="0.94"></label>
+            <label class="field"><span class="field-label">Pitch</span><input type="range" id="pitch-input" min="0.88" max="1.08" step="0.01" value="0.98"></label>
+            <button id="test-voice-btn">Test voice</button>
+          </div>
+          <div class="settings-card">
+            <h3>Identity</h3>
+            <label class="field"><span class="field-label">Your name (Eryn uses this to personalise responses)</span><input type="text" id="creator-input" placeholder="Your name"></label>
+            <button class="primary" id="save-creator-btn">Save</button>
+          </div>
+          <div class="settings-card">
+            <h3>About Eryn</h3>
+            <p style="font-size:0.78rem;color:var(--muted);line-height:1.65;margin-bottom:10px;">
+              Eryn v2.0 — voice-first desktop assistant. Runs entirely on your machine. No data collection.
+              When the local server is running, she has full OS access: launch and kill apps, run shell commands, read/write any file, take screenshots, control volume, and more.
+            </p>
+            <button id="view-caps-btn">View all capabilities</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- right-panel -->
+  </div><!-- mid-row -->
+</div><!-- shell -->
+
+<!-- MIC BAR -->
+<div id="mic-bar">
+  <button id="mic-btn" aria-label="Toggle microphone">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+      <line x1="12" y1="19" x2="12" y2="23"/>
+      <line x1="8" y1="23" x2="16" y2="23"/>
+    </svg>
+  </button>
+  <div id="mic-hint">TAP OR SAY "HEY ERYN"</div>
+</div>
+
+<!-- CAPS MODAL -->
+<div id="caps-modal">
+  <div class="modal-box">
+    <h2>// ERYN v2.0 — CAPABILITIES</h2>
+    <div class="cap-group">
+      <h4>Always Available (Browser)</h4>
+      <div class="cap-item"><div class="cap-dot"></div><span>Voice recognition + speech synthesis</span></div>
+      <div class="cap-item"><div class="cap-dot"></div><span>Open websites, web apps, and URLs in new tabs</span></div>
+      <div class="cap-item"><div class="cap-dot"></div><span>Google, YouTube, Reddit, GitHub, Wikipedia search</span></div>
+      <div class="cap-item"><div class="cap-dot"></div><span>AI-powered SVG diagrams (flowcharts, architecture, mindmaps)</span></div>
+      <div class="cap-item"><div class="cap-dot"></div><span>Embedded Google Maps for any location</span></div>
+      <div class="cap-item"><div class="cap-dot"></div><span>Read/edit local files via File System API (Chrome/Edge)</span></div>
+      <div class="cap-item"><div class="cap-dot"></div><span>Push GitHub commits via API</span></div>
+      <div class="cap-item"><div class="cap-dot"></div><span>Full conversation history across sessions</span></div>
+      <div class="cap-item"><div class="cap-dot"></div><span>Hands-free mode with continuous listening</span></div>
+    </div>
+    <div class="cap-group">
+      <h4>With Local Server (node server.js)</h4>
+      <div class="cap-item"><div class="cap-dot"></div><span>Launch any desktop app by name or voice</span></div>
+      <div class="cap-item"><div class="cap-dot"></div><span>Kill/close any running application</span></div>
+      <div class="cap-item"><div class="cap-dot"></div><span>Run shell commands and get output back</span></div>
+      <div class="cap-item"><div class="cap-dot"></div><span>Read/write any file on the computer (not just browser sandbox)</span></div>
+      <div class="cap-item"><div class="cap-dot"></div><span>Real-time CPU, RAM, disk, and process monitoring</span></div>
+      <div class="cap-item"><div class="cap-dot"></div><span>Take screenshots of the full desktop</span></div>
+      <div class="cap-item"><div class="cap-dot"></div><span>Read and write clipboard</span></div>
+      <div class="cap-item"><div class="cap-dot"></div><span>Control system volume (Mac only, Windows needs nircmd)</span></div>
+      <div class="cap-item"><div class="cap-dot"></div><span>Open URLs in the system default browser</span></div>
+    </div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="primary" id="close-caps-btn">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// ERYN MAIN — v2.0
+// ═══════════════════════════════════════════════════════
+
+const SERVER = 'http://localhost:3000';
+const WS_URL = 'ws://localhost:3000';
+
+const state = {
+  recognition: null,
+  listening:   false,
+  handsFree:   localStorage.getItem('eryn_hf') === 'true',
+  speaking:    false,
+  restarting:  false,
+  voices:      [],
+  selectedVoice: localStorage.getItem('eryn_voice') || '',
+  lastMapUrl:  '',
+  lastDiagramSvg: '',
+  folderHandle: null,
+  fileHandles:  [],
+  activeFile:   null,
+  recentCmds:   [],
+  creator:      localStorage.getItem('eryn_creator') || 'my creator',
+  serverOnline: false,
+  sysInfo:      {},
+  ws:           null,
+};
+
+const $ = id => document.getElementById(id);
+
+const els = {
+  statusDot:        $('status-dot'),
+  micBtn:           $('mic-btn'),
+  micHint:          $('mic-hint'),
+  transcript:       $('transcript'),
+  cmdInput:         $('cmd-input'),
+  sendBtn:          $('send-btn'),
+  diagramBoard:     $('diagram-board'),
+  diagramTitle:     $('diagram-title'),
+  mapBoard:         $('map-board'),
+  mapTitle:         $('map-title'),
+  openMapTabBtn:    $('open-map-tab-btn'),
+  dlDiagramBtn:     $('dl-diagram-btn'),
+  groqInput:        $('groq-input'),
+  geminiInput:      $('gemini-input'),
+  saveKeysBtn:      $('save-keys-btn'),
+  clearKeysBtn:     $('clear-keys-btn'),
+  testVoiceBtn:     $('test-voice-btn'),
+  voiceSelect:      $('voice-select'),
+  rateInput:        $('rate-input'),
+  pitchInput:       $('pitch-input'),
+  activityToggle:   $('activity-toggle'),
+  activityPanel:    $('activity-panel'),
+  hfToggleBtn:      $('hf-toggle-btn'),
+  hfBadge:          $('hf-badge'),
+  capsBtn:          $('caps-btn'),
+  capsModal:        $('caps-modal'),
+  closeCapsBtn:     $('close-caps-btn'),
+  viewCapsBtn:      $('view-caps-btn'),
+  quickCommands:    $('quick-commands'),
+  recentList:       $('recent-list'),
+  recentCount:      $('recent-count'),
+  responseCards:    $('response-cards'),
+  connectFolderBtn: $('connect-folder-btn'),
+  folderStatus:     $('folder-status'),
+  fileList:         $('file-list'),
+  selectedFileInput:$('selected-file-input'),
+  fileEditor:       $('file-editor'),
+  saveFileBtn:      $('save-file-btn'),
+  summarizeFileBtn: $('summarize-file-btn'),
+  githubTokenInput: $('github-token-input'),
+  githubRepoInput:  $('github-repo-input'),
+  githubSaveBtn:    $('github-save-btn'),
+  githubPushBtn:    $('github-push-btn'),
+  githubReadBtn:    $('github-read-btn'),
+  githubResult:     $('github-result'),
+  githubStatus:     $('github-status'),
+  creatorInput:     $('creator-input'),
+  saveCreatorBtn:   $('save-creator-btn'),
+  serverBadge:      $('server-badge'),
+  serverBadgeText:  $('server-badge-text'),
+  sysinfoBar:       $('sysinfo'),
+  cpuInfo:          $('cpu-info'),
+  memInfo:          $('mem-info'),
+  historyContainer: $('history-container'),
+  newSessionBtn:    $('new-session-btn'),
+  clearHistoryBtn:  $('clear-history-btn'),
+  appGrid:          $('app-grid'),
+  shellInput:       $('shell-input'),
+  shellRunBtn:      $('shell-run-btn'),
+  shellOutput:      $('shell-output'),
+  sysInfoDisplay:   $('sys-info-display'),
+  refreshSysinfoBtn:$('refresh-sysinfo-btn'),
+  clipReadBtn:      $('clip-read-btn'),
+  clipWriteBtn:     $('clip-write-btn'),
+  clipContent:      $('clip-content'),
+  volUpBtn:         $('vol-up-btn'),
+  volDownBtn:       $('vol-down-btn'),
+  volMuteBtn:       $('vol-mute-btn'),
+  closeAppInput:    $('close-app-input'),
+  closeAppBtn:      $('close-app-btn'),
+};
+
+const SITES = {
+  // Search
+  'google':'https://www.google.com','bing':'https://www.bing.com','duckduckgo':'https://duckduckgo.com',
+  'yahoo':'https://www.yahoo.com','ecosia':'https://www.ecosia.org',
+  // Video / Social
+  'youtube':'https://www.youtube.com','twitter':'https://twitter.com','x':'https://x.com',
+  'instagram':'https://www.instagram.com','facebook':'https://www.facebook.com',
+  'tiktok':'https://www.tiktok.com','reddit':'https://www.reddit.com',
+  'linkedin':'https://www.linkedin.com','pinterest':'https://www.pinterest.com',
+  'snapchat':'https://web.snapchat.com','twitch':'https://www.twitch.tv',
+  'tumblr':'https://www.tumblr.com',
+  // Communication
+  'gmail':'https://mail.google.com','outlook':'https://outlook.live.com',
+  'discord':'https://discord.com/app','slack':'https://slack.com',
+  'whatsapp':'https://web.whatsapp.com','telegram':'https://web.telegram.org',
+  'teams':'https://teams.microsoft.com','microsoft teams':'https://teams.microsoft.com',
+  'zoom':'https://zoom.us','meet':'https://meet.google.com','google meet':'https://meet.google.com',
+  // Google Suite
+  'drive':'https://drive.google.com','google drive':'https://drive.google.com',
+  'docs':'https://docs.google.com/document','google docs':'https://docs.google.com/document',
+  'sheets':'https://docs.google.com/spreadsheets','google sheets':'https://docs.google.com/spreadsheets',
+  'slides':'https://docs.google.com/presentation','google slides':'https://docs.google.com/presentation',
+  'calendar':'https://calendar.google.com','google calendar':'https://calendar.google.com',
+  'maps':'https://www.google.com/maps','google maps':'https://www.google.com/maps',
+  'photos':'https://photos.google.com','google photos':'https://photos.google.com',
+  'translate':'https://translate.google.com','google translate':'https://translate.google.com',
+  // Productivity
+  'notion':'https://www.notion.so','trello':'https://trello.com','asana':'https://app.asana.com',
+  'jira':'https://jira.atlassian.com','confluence':'https://www.atlassian.com/software/confluence',
+  'monday':'https://monday.com','clickup':'https://app.clickup.com','airtable':'https://airtable.com',
+  'todoist':'https://todoist.com','linear':'https://linear.app','obsidian':'https://obsidian.md',
+  'roam':'https://roamresearch.com',
+  // AI
+  'chatgpt':'https://chatgpt.com','claude':'https://claude.ai','gemini':'https://gemini.google.com',
+  'perplexity':'https://www.perplexity.ai','copilot':'https://copilot.microsoft.com',
+  'midjourney':'https://www.midjourney.com','anthropic':'https://www.anthropic.com',
+  'openai':'https://openai.com','huggingface':'https://huggingface.co',
+  'hugging face':'https://huggingface.co','runway':'https://runwayml.com',
+  'pika':'https://pika.art','suno':'https://suno.com','udio':'https://www.udio.com',
+  // Dev
+  'github':'https://github.com','gitlab':'https://gitlab.com','bitbucket':'https://bitbucket.org',
+  'stackoverflow':'https://stackoverflow.com','stack overflow':'https://stackoverflow.com',
+  'npm':'https://www.npmjs.com','pypi':'https://pypi.org','codepen':'https://codepen.io',
+  'replit':'https://replit.com','codesandbox':'https://codesandbox.io',
+  'vscode':'https://vscode.dev','vs code':'https://vscode.dev',
+  'vercel':'https://vercel.com','netlify':'https://app.netlify.com',
+  'heroku':'https://dashboard.heroku.com','railway':'https://railway.app',
+  'supabase':'https://supabase.com','firebase':'https://console.firebase.google.com',
+  'aws':'https://aws.amazon.com','azure':'https://portal.azure.com',
+  'gcp':'https://console.cloud.google.com','mdn':'https://developer.mozilla.org',
+  'devdocs':'https://devdocs.io','caniuse':'https://caniuse.com',
+  'can i use':'https://caniuse.com','bundlephobia':'https://bundlephobia.com',
+  // Media
+  'spotify':'https://open.spotify.com','netflix':'https://www.netflix.com',
+  'hulu':'https://www.hulu.com','disney plus':'https://www.disneyplus.com',
+  'disney+':'https://www.disneyplus.com','hbo max':'https://www.max.com','max':'https://www.max.com',
+  'prime video':'https://www.amazon.com/prime-video','amazon prime':'https://www.amazon.com/prime-video',
+  'apple music':'https://music.apple.com','soundcloud':'https://soundcloud.com',
+  'bandcamp':'https://bandcamp.com','crunchyroll':'https://www.crunchyroll.com',
+  // Shopping
+  'amazon':'https://www.amazon.com','ebay':'https://www.ebay.com','etsy':'https://www.etsy.com',
+  'aliexpress':'https://www.aliexpress.com','shopify':'https://www.shopify.com',
+  'walmart':'https://www.walmart.com','bestbuy':'https://www.bestbuy.com',
+  // News / Info
+  'wikipedia':'https://www.wikipedia.org','bbc':'https://www.bbc.com',
+  'cnn':'https://www.cnn.com','nytimes':'https://www.nytimes.com',
+  'the guardian':'https://www.theguardian.com','techcrunch':'https://techcrunch.com',
+  'hacker news':'https://news.ycombinator.com','hackernews':'https://news.ycombinator.com',
+  'hn':'https://news.ycombinator.com',
+  // Design
+  'figma':'https://www.figma.com','canva':'https://www.canva.com',
+  'behance':'https://www.behance.net','dribbble':'https://dribbble.com',
+  'unsplash':'https://unsplash.com','pexels':'https://www.pexels.com',
+  'coolors':'https://coolors.co','fontawesome':'https://fontawesome.com',
+  // Finance
+  'paypal':'https://www.paypal.com','stripe':'https://dashboard.stripe.com',
+  'coinbase':'https://www.coinbase.com','robinhood':'https://robinhood.com',
+};
+
+const DESKTOP_APPS = [
+  { name:'VS Code',   icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>', cmd:'vscode' },
+  { name:'Terminal',  icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>', cmd:'terminal' },
+  { name:'Chrome',    icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>', cmd:'chrome' },
+  { name:'Spotify',   icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12s2-2 4-2 4 2 4 2"/></svg>', cmd:'spotify' },
+  { name:'Finder/Explorer', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 2H8L2 7h20l-6-5z"/></svg>', cmd:'finder' },
+  { name:'Discord',   icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11a1 1 0 100 2 1 1 0 000-2zm6 0a1 1 0 100 2 1 1 0 000-2z"/><path d="M20.32 4.37a19.8 19.8 0 00-4.93-1.51 13.78 13.78 0 00-.56 1.14 18.27 18.27 0 00-5.49 0 12.64 12.64 0 00-.56-1.14A19.74 19.74 0 003.68 4.37C.53 9.2-.32 13.9.1 18.54a19.94 19.94 0 006.07 3.03A15.12 15.12 0 007.75 19a13 13 0 01-2.07-1 3.07 3.07 0 00.51-.4 14.14 14.14 0 0012.17 0 3.8 3.8 0 00.5.4 13.16 13.16 0 01-2.08 1 15.12 15.12 0 001.59 2.55 19.87 19.87 0 006.07-3.06c.5-5.22-.84-9.77-3.47-13.12z"/></svg>', cmd:'discord' },
+  { name:'Notion',    icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>', cmd:'notion' },
+  { name:'Slack',     icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"/><path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/><path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z"/><path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"/><path d="M14 14.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5z"/><path d="M15.5 19H14v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"/><path d="M10 9.5C10 8.67 9.33 8 8.5 8H3.5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5z"/><path d="M8.5 5H10V3.5C10 2.67 9.33 2 8.5 2S7 2.67 7 3.5 7.67 5 8.5 5z"/></svg>', cmd:'slack' },
+  { name:'Figma',     icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 5.5A3.5 3.5 0 0 1 8.5 2H12v7H8.5A3.5 3.5 0 0 1 5 5.5z"/><path d="M12 2h3.5a3.5 3.5 0 1 1 0 7H12V2z"/><path d="M12 12.5a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/><path d="M5 19.5A3.5 3.5 0 0 1 8.5 16H12v3.5a3.5 3.5 0 1 1-7 0z"/><path d="M5 12.5A3.5 3.5 0 0 1 8.5 9H12v7H8.5A3.5 3.5 0 0 1 5 12.5z"/></svg>', cmd:'figma' },
+];
+
+const QUICK_CMDS = [
+  { label:'Open VS Code',         cmd:'open vs code' },
+  { label:'Open Terminal',        cmd:'open terminal' },
+  { label:'Play music',           cmd:'play lofi music on youtube' },
+  { label:'Search the web',       cmd:'search the web for latest AI news' },
+  { label:'Make a diagram',       cmd:'make a diagram of my app architecture' },
+  { label:'Show a map',           cmd:'show a map of New York' },
+  { label:'System info',          cmd:'show system info' },
+  { label:'Read clipboard',       cmd:'read my clipboard' },
+];
+
+// ═══════════════════════
+// BOOT
+// ═══════════════════════
+async function boot() {
+  ErynnBrain.init();
+
+  els.groqInput.value     = localStorage.getItem('eryn_groq')     || '';
+  els.geminiInput.value   = localStorage.getItem('eryn_gemini')   || '';
+  els.githubTokenInput.value = localStorage.getItem('eryn_gh_token') || '';
+  els.githubRepoInput.value  = localStorage.getItem('eryn_gh_repo')  || '';
+  els.creatorInput.value  = state.creator;
+
+  if (state.handsFree) els.hfBadge.classList.add('visible');
+
+  ErynnOrb.initOrb($('bg-canvas'));
+  setupTabs();
+  setupSpeech();
+  setupVoices();
+  buildQuickCmds();
+  buildAppGrid();
+  bindEvents();
+  renderHistoryPanel();
+
+  // Try server
+  await checkServer();
+  setInterval(checkServer, 15000);
+
+  // Connect WebSocket
+  connectWS();
+
+  const greeting = `Eryn online. Version two. I'm your desktop assistant, built by ${state.creator}. ${state.serverOnline ? 'Local server is connected — I have full desktop control.' : 'Running in browser mode. Start the local server for full desktop control.'} Say something or type a command.`;
+  addMsg('eryn', greeting);
+  speak(greeting);
+  setStatus('idle');
+}
+
+// ═══════════════════════
+// SERVER
+// ═══════════════════════
+async function checkServer() {
+  try {
+    const r = await fetch(`${SERVER}/api/status`, { signal: AbortSignal.timeout(2000) });
+    if (r.ok) {
+      const d = await r.json();
+      state.serverOnline = true;
+      state.sysInfo = d;
+      els.serverBadge.classList.add('online');
+      els.serverBadgeText.textContent = `${d.hostname} · ${d.platform}`;
+      els.sysinfoBar.style.display = 'flex';
+      if (d.cpuLoad !== null) els.cpuInfo.textContent = `CPU ${d.cpuLoad}%`;
+      if (d.memUsed !== null) els.memInfo.textContent = `${d.memUsed}/${d.memTotal}GB`;
+    }
+  } catch {
+    state.serverOnline = false;
+    els.serverBadge.classList.remove('online');
+    els.serverBadgeText.textContent = 'Server offline';
+    els.sysinfoBar.style.display = 'none';
+  }
+}
+
+function connectWS() {
+  try {
+    state.ws = new WebSocket(WS_URL);
+    state.ws.onmessage = e => {
+      try {
+        const { type, data } = JSON.parse(e.data);
+        if (type === 'app_opened') addMsg('system', `Opened: ${data.name}`);
+        if (type === 'app_closed') addMsg('system', `Closed: ${data.name}`);
+        if (type === 'shell_output') updateShellOutput(data.output);
+        if (type === 'file_written') addMsg('system', `File saved: ${data.path}`);
+      } catch {}
+    };
+    state.ws.onclose = () => setTimeout(connectWS, 5000);
+  } catch {}
+}
+
+async function serverCall(path, method = 'GET', body = null) {
+  if (!state.serverOnline) throw new Error('Local server is not running. Start it with: node server.js');
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(`${SERVER}${path}`, opts);
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || `Server error ${r.status}`);
+  return j;
+}
+
+// ═══════════════════════
+// TABS
+// ═══════════════════════
+function setupTabs() {
+  document.querySelectorAll('.ws-tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.panel)));
+}
+function switchTab(name) {
+  document.querySelectorAll('.ws-tab').forEach(t => t.classList.toggle('active', t.dataset.panel === name));
+  document.querySelectorAll('.ws-panel').forEach(p => p.classList.remove('active'));
+  $(`panel-${name}`).classList.add('active');
+  if (name === 'history') renderHistoryPanel();
+  if (name === 'desktop') loadSysInfo();
+}
+
+// ═══════════════════════
+// APP GRID
+// ═══════════════════════
+function buildAppGrid() {
+  els.appGrid.innerHTML = '';
+  DESKTOP_APPS.forEach(app => {
+    const btn = document.createElement('button');
+    btn.className = 'app-btn';
+    btn.innerHTML = `${app.icon}<span>${app.name}</span>`;
+    btn.addEventListener('click', () => launchApp(app.cmd, app.name));
+    els.appGrid.appendChild(btn);
+  });
+}
+
+async function launchApp(cmd, name) {
+  try {
+    await serverCall('/api/app/open', 'POST', { name: cmd });
+    addMsg('eryn', `Opened ${name}.`);
+    speak(`Opening ${name}.`);
+  } catch (e) {
+    addMsg('error', e.message);
+  }
+}
+
+// ═══════════════════════
+// QUICK COMMANDS
+// ═══════════════════════
+function buildQuickCmds() {
+  els.quickCommands.innerHTML = '';
+  QUICK_CMDS.forEach(({ label, cmd }) => {
+    const btn = document.createElement('button');
+    btn.textContent = label;
+    btn.className = 'panel-entry';
+    btn.style.cssText = 'display:block;width:100%;text-align:left;';
+    btn.addEventListener('click', () => handleCommand(cmd));
+    els.quickCommands.appendChild(btn);
+  });
+}
+
+// ═══════════════════════
+// EVENTS
+// ═══════════════════════
+function bindEvents() {
+  els.micBtn.addEventListener('click', toggleListening);
+  els.sendBtn.addEventListener('click', sendCmd);
+  els.cmdInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendCmd(); }
+  });
+  els.cmdInput.addEventListener('input', () => {
+    els.cmdInput.style.height = 'auto';
+    els.cmdInput.style.height = Math.min(els.cmdInput.scrollHeight, 110) + 'px';
+  });
+
+  els.saveKeysBtn.addEventListener('click', saveKeys);
+  els.clearKeysBtn.addEventListener('click', clearKeys);
+  els.testVoiceBtn.addEventListener('click', () => speak('This is Eryn. Precise, grounded, and ready.'));
+  els.voiceSelect.addEventListener('change', () => {
+    state.selectedVoice = els.voiceSelect.value;
+    localStorage.setItem('eryn_voice', state.selectedVoice);
+  });
+  els.activityToggle.addEventListener('click', () => els.activityPanel.classList.toggle('open'));
+  els.hfToggleBtn.addEventListener('click', () => setHandsFree(!state.handsFree));
+  els.capsBtn.addEventListener('click', () => els.capsModal.classList.add('open'));
+  els.closeCapsBtn.addEventListener('click', () => els.capsModal.classList.remove('open'));
+  els.viewCapsBtn.addEventListener('click', () => els.capsModal.classList.add('open'));
+  els.capsModal.addEventListener('click', e => { if (e.target === els.capsModal) els.capsModal.classList.remove('open'); });
+  els.dlDiagramBtn.addEventListener('click', downloadDiagram);
+  els.openMapTabBtn.addEventListener('click', () => { if (state.lastMapUrl) openTab(state.lastMapUrl); });
+  els.connectFolderBtn.addEventListener('click', connectFolder);
+  els.saveFileBtn.addEventListener('click', saveActiveFile);
+  els.summarizeFileBtn.addEventListener('click', summarizeActiveFile);
+  els.githubSaveBtn.addEventListener('click', saveGitHub);
+  els.githubPushBtn.addEventListener('click', githubPushCommit);
+  els.githubReadBtn.addEventListener('click', githubReadReadme);
+  els.saveCreatorBtn.addEventListener('click', () => {
+    state.creator = els.creatorInput.value.trim() || 'my creator';
+    localStorage.setItem('eryn_creator', state.creator);
+    addMsg('system', `Identity updated: ${state.creator}.`);
+  });
+
+  // History
+  els.newSessionBtn.addEventListener('click', () => {
+    ErynnBrain.startNewSession();
+    els.transcript.innerHTML = '';
+    addMsg('system', 'New session started.');
+    renderHistoryPanel();
+    switchTab('chat');
+  });
+  els.clearHistoryBtn.addEventListener('click', () => {
+    if (confirm('Delete all conversation history?')) {
+      ErynnBrain.clearAll();
+      renderHistoryPanel();
+      addMsg('system', 'History cleared.');
+    }
+  });
+
+  // Desktop control
+  els.shellRunBtn.addEventListener('click', runShellCmd);
+  els.shellInput.addEventListener('keydown', e => { if (e.key === 'Enter') runShellCmd(); });
+  els.refreshSysinfoBtn.addEventListener('click', loadSysInfo);
+  els.clipReadBtn.addEventListener('click', readClipboard);
+  els.clipWriteBtn.addEventListener('click', writeClipboard);
+  els.volUpBtn.addEventListener('click',   () => serverVolume('up'));
+  els.volDownBtn.addEventListener('click', () => serverVolume('down'));
+  els.volMuteBtn.addEventListener('click', () => serverVolume('mute'));
+  els.closeAppBtn.addEventListener('click', () => {
+    const name = els.closeAppInput.value.trim();
+    if (name) closeApp(name);
+  });
+}
+
+// ═══════════════════════
+// STATUS
+// ═══════════════════════
+function setStatus(s) {
+  els.statusDot.className = 'status-dot ' + s;
+  const lvl = { listening:0.5, speaking:0.9, thinking:0.3, idle:0 }[s] || 0;
+  ErynnOrb.setOrbState(s, lvl);
+}
+
+// ═══════════════════════
+// SPEECH
+// ═══════════════════════
+function setupSpeech() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { addMsg('system', 'Voice recognition unavailable. Typing works fine.'); return; }
+  state.recognition = new SR();
+  state.recognition.continuous = false;
+  state.recognition.interimResults = false;
+  state.recognition.lang = 'en-US';
+
+  state.recognition.onstart = () => {
+    state.listening = true;
+    els.micBtn.classList.add('listening');
+    setStatus('listening');
+    els.micHint.textContent = 'LISTENING…';
+  };
+  state.recognition.onend = () => {
+    state.listening = false;
+    els.micBtn.classList.remove('listening');
+    els.micHint.textContent = 'TAP OR SAY "HEY ERYN"';
+    setStatus(state.handsFree ? 'listening' : 'idle');
+    if (state.handsFree && !state.speaking) scheduleRestart();
+  };
+  state.recognition.onerror = e => {
+    if (e.error !== 'no-speech') addMsg('error', speechErr(e.error));
+    setStatus('idle');
+  };
+  state.recognition.onresult = e => {
+    const text = e.results?.[0]?.[0]?.transcript?.trim() || '';
+    if (text) handleCommand(text);
+  };
+}
+
+function toggleListening() {
+  if (!state.recognition) { addMsg('error', 'Voice not supported. Use the text input.'); return; }
+  try { state.listening ? state.recognition.stop() : state.recognition.start(); } catch {}
+}
+
+function scheduleRestart() {
+  if (state.restarting || state.listening || state.speaking || !state.handsFree) return;
+  state.restarting = true;
+  setTimeout(() => {
+    state.restarting = false;
+    if (!state.handsFree || state.listening || state.speaking) return;
+    try { state.recognition.start(); } catch {}
+  }, 600);
+}
+
+function setHandsFree(on) {
+  state.handsFree = on;
+  localStorage.setItem('eryn_hf', String(on));
+  els.hfBadge.classList.toggle('visible', on);
+  if (on) { scheduleRestart(); addMsg('system', 'Hands-free on.'); }
+  else { if (state.recognition && state.listening) state.recognition.stop(); addMsg('system', 'Hands-free off.'); }
+}
+
+// ── Voices ──
+function setupVoices() {
+  if (!('speechSynthesis' in window)) { els.voiceSelect.innerHTML = '<option>Unavailable</option>'; return; }
+  const load = () => {
+    state.voices = window.speechSynthesis.getVoices();
+    const sorted = [...state.voices].sort((a, b) => scoreVoice(b) - scoreVoice(a));
+    els.voiceSelect.innerHTML = '';
+    sorted.forEach(v => {
+      const o = document.createElement('option');
+      o.value = v.name;
+      o.textContent = `${v.name} (${v.lang})`;
+      els.voiceSelect.appendChild(o);
+    });
+    const pref = state.selectedVoice || sorted[0]?.name || '';
+    els.voiceSelect.value = pref;
+    state.selectedVoice = pref;
+  };
+  window.speechSynthesis.onvoiceschanged = load;
+  load();
+}
+
+function scoreVoice(v) {
+  let s = 0;
+  const n = v.name.toLowerCase();
+  if (v.lang?.toLowerCase().startsWith('en')) s += 10;
+  if (['samantha','ava','allison','karen','victoria','google us english'].some(x => n.includes(x))) s += 12;
+  if (n.includes('premium') || n.includes('enhanced') || n.includes('neural')) s += 8;
+  if (v.localService) s += 2;
+  return s;
+}
+
+function speak(text) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const spoken = voiceClean(text);
+  if (!spoken) return;
+  const utt = new SpeechSynthesisUtterance(spoken);
+  const v   = state.voices.find(v => v.name === state.selectedVoice) || state.voices.sort((a, b) => scoreVoice(b) - scoreVoice(a))[0];
+  if (v) utt.voice = v;
+  utt.rate   = Number(els.rateInput.value || 0.94);
+  utt.pitch  = Number(els.pitchInput.value || 0.98);
+  utt.volume = 0.95;
+  utt.onstart = () => { state.speaking = true; setStatus('speaking'); };
+  utt.onend   = () => {
+    state.speaking = false;
+    setStatus(state.handsFree ? 'listening' : 'idle');
+    if (state.handsFree) scheduleRestart();
+  };
+  utt.onerror = () => { state.speaking = false; setStatus('idle'); };
+  window.speechSynthesis.speak(utt);
+}
+
+function voiceClean(text) {
+  const clean = String(text).replace(/```[\s\S]*?```/g,'code block').replace(/[`*_#>~]/g,'').replace(/\[(.*?)\]\(.*?\)/g,'$1').replace(/\s+/g,' ').trim();
+  if (clean.length > 700) return `I put the details in the chat. ${clean.slice(0, 120)}…`;
+  return clean;
+}
+
+// ═══════════════════════
+// MESSAGES
+// ═══════════════════════
+function addMsg(role, text) {
+  ErynnBrain.addMessage(role, text);
+
+  const el  = document.createElement('article');
+  el.className = `msg ${role === 'user' ? 'user' : ''} ${role === 'error' ? 'error' : ''} ${role === 'system' ? 'system' : ''}`;
+  const label = { user:'You', error:'Error', system:'System', eryn:'Eryn' }[role] || 'Eryn';
+  const time  = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+  el.innerHTML = `<strong>${label}</strong><span>${esc(text)}</span><div class="msg-time">${time}</div>`;
+  els.transcript.appendChild(el);
+  els.transcript.scrollTop = els.transcript.scrollHeight;
+
+  if (role === 'user') {
+    addRecent(text);
+    showCard(text.slice(0, 55) + (text.length > 55 ? '…' : ''));
+  }
+}
+
+function addThinkingMsg() {
+  const el = document.createElement('article');
+  el.className = 'msg thinking';
+  el.id = 'thinking-msg';
+  el.innerHTML = `<strong>Eryn</strong><span>Thinking<span class="thinking-dots"><span></span><span></span><span></span></span></span>`;
+  els.transcript.appendChild(el);
+  els.transcript.scrollTop = els.transcript.scrollHeight;
+}
+
+function removeThinkingMsg() {
+  $('thinking-msg')?.remove();
+}
+
+function addRecent(cmd) {
+  state.recentCmds.unshift(cmd);
+  if (state.recentCmds.length > 8) state.recentCmds.pop();
+  els.recentList.innerHTML = '';
+  els.recentCount.textContent = state.recentCmds.length;
+  state.recentCmds.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'panel-entry';
+    d.textContent = c.slice(0, 46) + (c.length > 46 ? '…' : '');
+    d.addEventListener('click', () => handleCommand(c));
+    els.recentList.appendChild(d);
+  });
+}
+
+let cardTimer;
+function showCard(text) {
+  els.responseCards.querySelector('.response-card')?.remove();
+  const card = document.createElement('div');
+  card.className = 'response-card';
+  card.innerHTML = `<div class="card-label">Command</div><div>${esc(text)}</div><button class="card-close" onclick="this.parentElement.remove()">✕</button>`;
+  card.style.cssText = 'position:absolute;top:28%;left:50%;transform:translateX(-50%);animation:float-card 4s ease-in-out infinite;';
+  els.responseCards.appendChild(card);
+  clearTimeout(cardTimer);
+  cardTimer = setTimeout(() => card.remove(), 6000);
+}
+
+// ═══════════════════════
+// HISTORY PANEL
+// ═══════════════════════
+function renderHistoryPanel() {
+  const sessions = ErynnBrain.getAllSessions();
+  const cur      = ErynnBrain.getCurrentSession();
+  els.historyContainer.innerHTML = '';
+
+  if (!sessions.length) {
+    els.historyContainer.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:12px;">No history yet.</div>';
+    return;
+  }
+
+  sessions.forEach(s => {
+    const isCurrent = s.id === cur.id;
+    const date = new Date(s.startedAt).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    const msgCount = s.messages.length;
+
+    const el = document.createElement('div');
+    el.className = 'history-session';
+    el.innerHTML = `
+      <div class="history-session-header" data-id="${s.id}">
+        <div>
+          <div class="history-session-title">${esc(s.title)}${isCurrent ? ' <span style="color:var(--teal);font-size:0.65rem;">● current</span>' : ''}</div>
+          <div class="history-session-meta">${date} · ${msgCount} messages</div>
+        </div>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="history-session-body" id="hbody-${s.id}">
+        ${s.messages.slice(0, 10).map(m => `
+          <div class="history-msg">
+            <div class="history-msg-role ${m.role === 'user' ? 'user' : ''}">${m.role === 'user' ? 'You' : 'Eryn'}</div>
+            <div>${esc(m.text.slice(0, 120))}${m.text.length > 120 ? '…' : ''}</div>
+          </div>`).join('')}
+        ${msgCount > 10 ? `<div style="font-size:0.7rem;color:var(--muted);padding:4px 0;">+${msgCount - 10} more messages</div>` : ''}
+        <div class="history-actions">
+          ${!isCurrent ? `<button onclick="loadHistorySession('${s.id}')" style="font-size:0.72rem;">Load Session</button>` : ''}
+          <button onclick="deleteHistorySession('${s.id}')" class="danger" style="font-size:0.72rem;">Delete</button>
+        </div>
+      </div>`;
+
+    el.querySelector('.history-session-header').addEventListener('click', () => {
+      const body = $(`hbody-${s.id}`);
+      body.classList.toggle('open');
+    });
+
+    els.historyContainer.appendChild(el);
+  });
+}
+
+function loadHistorySession(id) {
+  const s = ErynnBrain.loadSession(id);
+  if (!s) return;
+  els.transcript.innerHTML = '';
+  s.messages.forEach(m => {
+    const el = document.createElement('article');
+    el.className = `msg ${m.role === 'user' ? 'user' : ''} ${m.role === 'system' ? 'system' : ''}`;
+    const label = { user:'You', system:'System', eryn:'Eryn' }[m.role] || 'Eryn';
+    const time  = new Date(m.ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+    el.innerHTML = `<strong>${label}</strong><span>${esc(m.text)}</span><div class="msg-time">${time}</div>`;
+    els.transcript.appendChild(el);
+  });
+  els.transcript.scrollTop = els.transcript.scrollHeight;
+  addMsg('system', `Loaded session: ${s.title}`);
+  switchTab('chat');
+}
+
+function deleteHistorySession(id) {
+  ErynnBrain.deleteSession(id);
+  renderHistoryPanel();
+}
+
+// ═══════════════════════
+// COMMAND ROUTER
+// ═══════════════════════
+async function handleCommand(raw) {
+  const cmd = raw.trim();
+  if (!cmd || state.speaking) return;
+  addMsg('user', cmd);
+  switchTab('chat');
+
+  const local = await runLocal(cmd);
+  if (local) {
+    addMsg('eryn', local.msg);
+    speak(local.speech || local.msg);
+    return;
+  }
+  await askModel(cmd);
+}
+
+function sendCmd() {
+  const val = els.cmdInput.value.trim();
+  if (!val) return;
+  els.cmdInput.value = '';
+  els.cmdInput.style.height = '';
+  handleCommand(val);
+}
+
+async function runLocal(cmd) {
+  const lo = cmd.toLowerCase();
+
+  // ── IDENTITY ──
+  if (/who are you|what are you|introduce yourself/.test(lo)) {
+    return { msg:`I'm Eryn — a custom desktop assistant built by ${state.creator}. Not ChatGPT, not Gemini, not a generic AI. I can open and close apps, run shell commands, read any file on your computer, push to GitHub, make diagrams, show maps, and hold full conversations. ${state.serverOnline ? 'Server is online — full desktop control active.' : 'Server is offline — start it for full desktop control.'}` };
+  }
+  if (/who (made|built|created) you/.test(lo)) {
+    return { msg:`I was built by ${state.creator}. I'm a fully custom assistant.` };
+  }
+  if (/what can you do|your capabilities|show capabilities/.test(lo)) {
+    els.capsModal.classList.add('open');
+    return { msg:'Opening capabilities panel.', speech:'Here are my capabilities.' };
+  }
+  if (/are you (running|online|connected)|server status/.test(lo)) {
+    const status = state.serverOnline
+      ? `Yes, the local server is online on ${state.sysInfo.hostname}. CPU: ${state.sysInfo.cpuLoad}%, memory: ${state.sysInfo.memUsed}/${state.sysInfo.memTotal}GB.`
+      : 'The local server is offline. Start it with: node server.js in the Eryn folder.';
+    return { msg: status };
+  }
+
+  // ── DIAGRAM ──
+  if (/^(make|create|draw|build|generate|show)\s+(a\s+|an\s+)?(complex\s+|detailed\s+)?diagram/.test(lo)) {
+    const topic = cmd.replace(/^(make|create|draw|build|generate|show)\s+(a\s+|an\s+)?(complex\s+|detailed\s+)?diagram\s*(of|for|about|showing|on)?/i,'').trim() || 'System Architecture';
+    makeDiagram(topic);
+    switchTab('diagram');
+    return { msg:`Generating diagram for: ${topic}`, speech:`Making a diagram of ${topic}. Check the diagram tab.` };
+  }
+
+  // ── MAP ──
+  if (/show.*(map|directions)|map of|directions to/.test(lo)) {
+    const place = extractPlace(cmd);
+    showMap(place);
+    switchTab('map');
+    return { msg:`Map loaded for ${place}.`, speech:`Map loaded for ${place}.` };
+  }
+
+  // ── OPEN APP or SITE (smart routing) ──
+  if (/^(open|launch|start|go to|take me to|navigate to|pull up) /i.test(lo)) {
+    const target = cmd.replace(/^(open|launch|start|go to|take me to|navigate to|pull up)\s+/i,'').trim();
+    const targetLo = target.toLowerCase();
+
+    // Native desktop apps that should NOT be opened as URLs
+    const nativeApps = ['chrome','google chrome','firefox','safari','edge','microsoft edge',
+      'terminal','cmd','command prompt','powershell','windows terminal','finder','explorer',
+      'file explorer','calculator','notepad','paint','spotify','discord','slack','teams',
+      'zoom','vscode','visual studio code','vs code','blender','gimp','vlc','steam','obs',
+      'photoshop','illustrator','figma','xcode','word','excel','powerpoint','outlook',
+      'activity monitor','task manager','settings','system preferences','cursor','warp'];
+
+    const isNativeApp = nativeApps.some(a => targetLo === a || targetLo.includes(a));
+    const url = resolveUrl(target);
+
+    if (url && !isNativeApp) {
+      // It's a website — open in browser
+      if (state.serverOnline) {
+        try {
+          await serverCall('/api/browser/open','POST',{ url });
+          return { msg:`Opening ${target} in your browser.`, speech:`Opening ${target}.` };
+        } catch {}
+      }
+      openTab(url);
+      return { msg:`Opening ${target}.`, speech:`Opening ${target}.` };
+    }
+
+    // It's a desktop app
+    if (state.serverOnline) {
+      try {
+        await serverCall('/api/app/open','POST',{ name: target });
+        return { msg:`Launched ${target}.`, speech:`Opening ${target}.` };
+      } catch (e) {
+        return { msg:`Couldn't open ${target}. Make sure it's installed. (${e.message})`, speech:`I couldn't open ${target}.` };
+      }
+    }
+
+    // Server offline but looks like a site — open in new tab
+    if (url) { openTab(url); return { msg:`Opening ${target}.`, speech:`Opening ${target}.` }; }
+    return { msg:`Server is offline. Start server.js to open desktop apps.`, speech:`Start the local server to open apps.` };
+  }
+
+  // ── CLOSE APP ──
+  if (/^(close|kill|quit|stop) /.test(lo)) {
+    const target = cmd.replace(/^(close|kill|quit|stop)\s+/i,'').trim();
+    try {
+      await serverCall('/api/app/close','POST',{ name: target });
+      return { msg:`Closed ${target}.`, speech:`Closed ${target}.` };
+    } catch (e) {
+      return { msg:`Could not close ${target}: ${e.message}`, speech:`Couldn't close ${target}.` };
+    }
+  }
+
+  // ── APP ACTIONS ──
+  if (/^(spotify|music)\s+(play|pause|next|previous|prev|skip|back)/i.test(lo)) {
+    const actionMap = { play:'spotify_play', pause:'spotify_pause', next:'spotify_next', previous:'spotify_prev', prev:'spotify_prev', skip:'spotify_next', back:'spotify_prev' };
+    const actionWord = lo.match(/(play|pause|next|previous|prev|skip|back)/)[1];
+    try {
+      await serverCall('/api/app/action','POST',{ app:'Spotify', action: actionMap[actionWord] });
+      return { msg:`Spotify: ${actionWord}.`, speech:`${actionWord}.` };
+    } catch (e) { return { msg:`Spotify action failed: ${e.message}` }; }
+  }
+  if (/minimize all|show desktop/i.test(lo)) {
+    try {
+      await serverCall('/api/app/action','POST',{ app:'desktop', action:'show_desktop' });
+      return { msg:'Showing desktop.', speech:'Showing desktop.' };
+    } catch (e) { return { msg:`Action failed: ${e.message}` }; }
+  }
+
+  // ── SHELL ──
+  if (/^(run|execute|shell|terminal|cmd)\s/.test(lo) || lo.startsWith('$ ')) {
+    const shellCmd = cmd.replace(/^(run|execute|shell|terminal|cmd|\$)\s+/i,'').trim();
+    try {
+      const r = await serverCall('/api/shell','POST',{ cmd: shellCmd });
+      const output = r.output || '(no output)';
+      showShellOutput(output);
+      switchTab('desktop');
+      return { msg:`Command output:\n${output.slice(0,400)}${output.length>400?'\n…':''}`, speech:`Done. Output is in the Desktop tab.` };
+    } catch (e) {
+      return { msg:`Shell error: ${e.message}` };
+    }
+  }
+
+  // ── SYSTEM INFO ──
+  if (/system info|system status|cpu|memory|ram|disk/.test(lo)) {
+    await loadSysInfo();
+    switchTab('desktop');
+    return { msg:`System info loaded in the Desktop tab.`, speech:`System info is in the desktop tab.` };
+  }
+
+  // ── CLIPBOARD ──
+  if (/read.*clipboard|clipboard.*read|what.*clipboard/.test(lo)) {
+    return await readClipboard(true);
+  }
+  if (/write.*clipboard|copy.*clipboard/.test(lo)) {
+    const text = cmd.replace(/write|copy|to.*clipboard/gi,'').trim();
+    if (text) {
+      try {
+        await serverCall('/api/clipboard/write','POST',{ text });
+        return { msg:`Copied to clipboard: "${text}"`, speech:'Copied to clipboard.' };
+      } catch (e) { return { msg:`Clipboard error: ${e.message}` }; }
+    }
+  }
+
+  // ── VOLUME ──
+  if (/volume up|turn up|louder/.test(lo))         return await serverVolume('up', true);
+  if (/volume down|turn down|quieter|softer/.test(lo)) return await serverVolume('down', true);
+  if (/mute|silence/.test(lo) && lo.includes('volume')) return await serverVolume('mute', true);
+
+  // ── PLAY MUSIC ──
+  if (/play .*(music|song|track|playlist)/.test(lo) || lo.includes(' on youtube') || lo.includes(' on spotify')) {
+    const q = cmd.replace(/^play\s+/i,'').replace(/\s*(on|in)\s+(youtube|spotify|music)/i,'').trim();
+    if (lo.includes('spotify')) {
+      openTab(`https://open.spotify.com/search/${encodeURIComponent(q)}`);
+      return { msg:`Opening Spotify for: ${q}`, speech:`Opening Spotify for ${q}.` };
+    }
+    openTab(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`);
+    return { msg:`Searching YouTube for: ${q}`, speech:`Searching YouTube for ${q}.` };
+  }
+
+  // ── SEARCH (smart query extraction) ──
+  if (/\bsearch\b|\bgoogle\b|\blook up\b|\bfind me\b|\bwhat is\b|\bwho is\b|\bwhat are\b/i.test(lo) && !/^(open|launch|start)/.test(lo)) {
+    let q = cmd
+      .replace(/^(search(?: the web)?(?:\s+for)?|google(?:\s+for)?|look\s+up|find(?:\s+me)?|tell\s+me\s+about|what\s+is(?:\s+a)?|what\s+are|who\s+is|show\s+me)\s+/i, '')
+      .replace(/\b(please|for me|right now|quickly)\b/gi, '')
+      .trim();
+    if (!q) q = cmd;
+
+    // YouTube search?
+    if (/\byoutube\b/i.test(lo) || /\bvideo(s)?\b.*\babout\b/i.test(lo)) {
+      const yq = q.replace(/\bon\s+youtube\b|\byoutube\b/gi,'').trim();
+      openTab(`https://www.youtube.com/results?search_query=${encodeURIComponent(yq)}`);
+      return { msg:`Searching YouTube for: ${yq}`, speech:`Searching YouTube for ${yq}.` };
+    }
+    // Reddit search?
+    if (/\breddit\b/i.test(lo)) {
+      const rq = q.replace(/\bon\s+reddit\b|\breddit\b/gi,'').trim();
+      openTab(`https://www.reddit.com/search/?q=${encodeURIComponent(rq)}`);
+      return { msg:`Searching Reddit for: ${rq}`, speech:`Searching Reddit for ${rq}.` };
+    }
+    openTab(`https://www.google.com/search?q=${encodeURIComponent(q)}`);
+    return { msg:`Searching: ${q}`, speech:`Searching for ${q}.` };
+  }
+  if (/^youtube\s+/i.test(lo) || /search youtube for/i.test(lo)) {
+    const q = cmd.replace(/^(youtube|search youtube for)\s+/i,'').trim();
+    openTab(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`);
+    return { msg:`Searching YouTube: ${q}`, speech:`Searching YouTube for ${q}.` };
+  }
+
+  // ── GITHUB ──
+  if (/github.*(push|commit)/.test(lo)) {
+    githubPushCommit();
+    return { msg:'Starting GitHub commit. Check the Files tab.', speech:'Starting the push.' };
+  }
+  if (/github.*(read|readme)/.test(lo)) {
+    githubReadReadme(); switchTab('connections');
+    return { msg:'Reading GitHub README. Check Files tab.', speech:'Reading your readme.' };
+  }
+
+  // ── HANDS-FREE ──
+  if (/hands.?free on|start hands.?free/.test(lo)) { setHandsFree(true); return { msg:'Hands-free on.', speech:'Hands-free on.' }; }
+  if (/hands.?free off|stop hands.?free/.test(lo))  { setHandsFree(false); return { msg:'Hands-free off.', speech:'Hands-free off.' }; }
+
+  // ── CLEAR / STOP ──
+  if (/clear (chat|screen|history)/.test(lo)) { els.transcript.innerHTML = ''; return { msg:'Cleared.', speech:'Cleared.' }; }
+  if (/^(stop|be quiet|shut up|silence)$/.test(lo)) {
+    window.speechSynthesis?.cancel(); state.speaking = false; setStatus('idle');
+    return { msg:'Stopped.', speech:'' };
+  }
+
+  // ── SETTINGS ──
+  if (/open settings|go to settings/.test(lo)) { switchTab('settings'); return { msg:'Settings.', speech:'Settings.' }; }
+
+  return null;
+}
+
+// ═══════════════════════
+// AI MODEL
+// ═══════════════════════
+async function askModel(cmd) {
+  setStatus('thinking');
+  addThinkingMsg();
+
+  const groq   = localStorage.getItem('eryn_groq');
+  const gemini = localStorage.getItem('eryn_gemini');
+
+  const sysPrompt = ErynnBrain.buildSystemPrompt({
+    serverOnline: state.serverOnline,
+    platform:     state.sysInfo.platform,
+    hostname:     state.sysInfo.hostname,
+    memFree:      state.sysInfo.memFree,
+    cpuLoad:      state.sysInfo.cpuLoad,
+    openFiles:    state.activeFile ? [state.activeFile.path] : [],
+  });
+
+  const contextMsgs = ErynnBrain.getContextMessages();
+
+  if (groq) {
+    try {
+      const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method:'POST',
+        headers:{ Authorization:`Bearer ${groq}`, 'Content-Type':'application/json' },
+        body:JSON.stringify({
+          model:'llama-3.3-70b-versatile',
+          messages:[
+            { role:'system', content: sysPrompt },
+            ...contextMsgs.slice(0,-1),
+            { role:'user', content: cmd }
+          ],
+          temperature:0.65,
+          max_tokens:400
+        })
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j?.error?.message || 'Groq error');
+      const reply = j.choices?.[0]?.message?.content?.trim();
+      if (reply) { removeThinkingMsg(); addMsg('eryn', reply); speak(reply); setStatus('idle'); return; }
+    } catch (e) { addMsg('error', `Groq: ${e.message}`); }
+  }
+
+  if (gemini) {
+    try {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(gemini)}`,
+        {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body:JSON.stringify({
+            system_instruction: { parts:[{ text: sysPrompt }] },
+            contents: [
+              ...contextMsgs.slice(0,-1).map(m => ({
+                role: m.role === 'assistant' ? 'model' : 'user',
+                parts:[{ text: m.content }]
+              })),
+              { role:'user', parts:[{ text: cmd }] }
+            ],
+            generationConfig:{ temperature:0.65, maxOutputTokens:400 }
+          })
+        }
+      );
+      const j = await r.json();
+      if (!r.ok) throw new Error(j?.error?.message || `Gemini error ${r.status}`);
+      const reply = j.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (reply) { removeThinkingMsg(); addMsg('eryn', reply); speak(reply); setStatus('idle'); return; }
+    } catch (e) { addMsg('error', `Gemini: ${e.message}`); }
+  }
+
+  removeThinkingMsg();
+  const fb = 'I can handle local commands right now. Add a Groq or Gemini key in Settings for full AI conversation.';
+  addMsg('eryn', fb); speak(fb); setStatus('idle');
+}
+
+// ═══════════════════════
+// DIAGRAM
+// ═══════════════════════
+async function makeDiagram(topic) {
+  els.diagramBoard.innerHTML = '<div class="board-empty">Generating diagram<span class="thinking-dots"><span></span><span></span><span></span></span></div>';
+  try {
+    const { svg, title } = await ErynnDiagrams.make(topic);
+    state.lastDiagramSvg = svg;
+    els.diagramTitle.textContent = title;
+    els.diagramBoard.innerHTML   = svg;
+  } catch (e) {
+    els.diagramBoard.innerHTML = `<div class="board-empty">Error: ${esc(e.message)}</div>`;
+  }
+}
+
+function downloadDiagram() {
+  if (!state.lastDiagramSvg) { addMsg('error','No diagram yet.'); return; }
+  const blob = new Blob([state.lastDiagramSvg], { type:'image/svg+xml' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'eryn-diagram.svg'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════
+// MAP
+// ═══════════════════════
+function showMap(place) {
+  const p = place || 'New York';
+  const embed = `https://www.google.com/maps?q=${encodeURIComponent(p)}&output=embed`;
+  state.lastMapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p)}`;
+  els.mapTitle.textContent = `Map of ${p}`;
+  els.mapBoard.innerHTML   = `<iframe title="Map of ${esc(p)}" src="${embed}" loading="lazy" style="width:100%;height:100%;border:0;"></iframe>`;
+}
+
+// ═══════════════════════
+// DESKTOP CONTROL HELPERS
+// ═══════════════════════
+async function runShellCmd() {
+  const cmd = els.shellInput.value.trim();
+  if (!cmd) return;
+  try {
+    const r = await serverCall('/api/shell','POST',{ cmd });
+    showShellOutput(r.output || '(no output)');
+  } catch (e) {
+    showShellOutput(`Error: ${e.message}`);
+  }
+}
+
+function showShellOutput(text) {
+  els.shellOutput.style.display = 'block';
+  els.shellOutput.textContent   = text;
+  updateShellOutput(text);
+}
+
+function updateShellOutput(text) {
+  els.shellOutput.style.display = 'block';
+  els.shellOutput.textContent   = text;
+}
+
+async function loadSysInfo() {
+  if (!state.serverOnline) { els.sysInfoDisplay.textContent = 'Server offline.'; return; }
+  try {
+    const d = await serverCall('/api/system');
+    els.sysInfoDisplay.innerHTML = `
+      Platform : ${d.platform}<br>
+      Hostname : ${d.hostname}<br>
+      User     : ${d.user}<br>
+      Home     : ${d.home}<br>
+      CPUs     : ${d.cpus} × ${d.cpuModel?.slice(0,40)}<br>
+      CPU Load : ${d.cpuLoad !== undefined ? d.cpuLoad+'%' : '—'}<br>
+      RAM      : ${d.memory.free}GB free / ${d.memory.total}GB total<br>
+      Node.js  : ${d.node}<br>
+      Uptime   : ${Math.floor(d.uptime/3600)}h ${Math.floor((d.uptime%3600)/60)}m<br>
+      ${d.disks?.map(dd => `Disk ${dd.fs}: ${dd.used}/${dd.size}GB`).join('<br>') || ''}`;
+  } catch (e) {
+    els.sysInfoDisplay.textContent = `Error: ${e.message}`;
+  }
+}
+
+async function readClipboard(returnResult = false) {
+  try {
+    const r = await serverCall('/api/clipboard/read');
+    els.clipContent.value = r.text;
+    if (returnResult) return { msg:`Clipboard: "${r.text.slice(0,200)}"`, speech:`Your clipboard contains: ${r.text.slice(0,80)}` };
+    addMsg('eryn', `Clipboard: "${r.text.slice(0,200)}"`);
+  } catch (e) {
+    if (returnResult) return { msg:`Clipboard error: ${e.message}` };
+    addMsg('error', e.message);
+  }
+}
+
+async function writeClipboard() {
+  const text = els.clipContent.value;
+  try {
+    await serverCall('/api/clipboard/write','POST',{ text });
+    addMsg('system','Written to clipboard.');
+  } catch (e) { addMsg('error', e.message); }
+}
+
+async function serverVolume(action, returnResult = false) {
+  try {
+    await serverCall('/api/volume','POST',{ action });
+    const msg = { up:'Volume up.', down:'Volume down.', mute:'Muted.' }[action] || 'Done.';
+    if (returnResult) return { msg, speech: msg };
+    addMsg('system', msg);
+  } catch (e) {
+    if (returnResult) return { msg:`Volume error: ${e.message}` };
+    addMsg('error', e.message);
+  }
+}
+
+async function closeApp(name) {
+  try {
+    await serverCall('/api/app/close','POST',{ name });
+    addMsg('eryn', `Closed ${name}.`);
+    speak(`Closed ${name}.`);
+  } catch (e) { addMsg('error', e.message); }
+}
+
+// ═══════════════════════
+// FILE / FOLDER
+// ═══════════════════════
+async function connectFolder() {
+  if (!('showDirectoryPicker' in window)) { addMsg('error','Folder access needs Chrome or Edge.'); return; }
+  try {
+    state.folderHandle = await window.showDirectoryPicker({ mode:'readwrite' });
+    els.folderStatus.textContent = `Connected: ${state.folderHandle.name}`;
+    els.folderStatus.className   = 'conn-status ok';
+    els.fileList.style.display   = 'block';
+    await refreshFiles();
+    addMsg('eryn', `Connected folder: ${state.folderHandle.name}`);
+  } catch { addMsg('error','Folder connection cancelled.'); }
+}
+
+async function refreshFiles() {
+  if (!state.folderHandle) return;
+  state.fileHandles = [];
+  await gatherFiles(state.folderHandle, '');
+  renderFiles();
+}
+
+async function gatherFiles(dir, prefix) {
+  for await (const [name, handle] of dir.entries()) {
+    if (name.startsWith('.') || ['node_modules','dist','.git'].includes(name)) continue;
+    const p = prefix ? `${prefix}/${name}` : name;
+    if (handle.kind === 'file' && /\.(html|css|js|ts|tsx|jsx|json|md|txt|py|rb|go|rs|java|c|cpp|h|php|swift|yml|yaml|toml)$/i.test(name))
+      state.fileHandles.push({ path:p, handle });
+    if (handle.kind === 'directory' && state.fileHandles.length < 400) await gatherFiles(handle, p);
+  }
+}
+
+function renderFiles() {
+  els.fileList.innerHTML = '';
+  if (!state.fileHandles.length) { els.fileList.textContent = 'No editable files found.'; return; }
+  state.fileHandles.slice(0,400).forEach(f => {
+    const btn = document.createElement('button');
+    btn.textContent = f.path;
+    btn.style.cssText = 'display:block;width:100%;text-align:left;margin-bottom:3px;font-size:0.72rem;word-break:break-all;';
+    btn.addEventListener('click', () => openFile(f));
+    els.fileList.appendChild(btn);
+  });
+}
+
+async function openFile(ref) {
+  try {
+    const file = await ref.handle.getFile();
+    state.activeFile = ref;
+    els.selectedFileInput.value = ref.path;
+    els.fileEditor.value = await file.text();
+    addMsg('eryn', `Loaded ${ref.path}.`);
+  } catch { addMsg('error','Could not open file.'); }
+}
+
+async function saveActiveFile() {
+  if (!state.activeFile) { addMsg('error','Select a file first.'); return; }
+  try {
+    const w = await state.activeFile.handle.createWritable();
+    await w.write(els.fileEditor.value);
+    await w.close();
+    addMsg('eryn', `Saved ${state.activeFile.path}.`);
+    speak(`Saved.`);
+  } catch { addMsg('error','Could not save.'); }
+}
+
+function summarizeActiveFile() {
+  if (!state.activeFile || !els.fileEditor.value.trim()) { addMsg('error','Open a file first.'); return; }
+  const text  = els.fileEditor.value;
+  const lines = text.split(/\r?\n/).length;
+  const fns   = [...text.matchAll(/\b(function|const|class|async function)\s+([A-Za-z0-9_$]+)/g)].map(m => m[2]).slice(0,6);
+  const parts = [`${state.activeFile.path} — ${lines} lines.`];
+  if (fns.length)           parts.push(`Key symbols: ${fns.join(', ')}.`);
+  if (/fetch\(|axios|api/i.test(text)) parts.push('Makes API calls.');
+  if (/<html|<body/i.test(text))       parts.push('Contains HTML.');
+  const s = parts.join(' ');
+  addMsg('eryn', s); speak(s);
+}
+
+// ═══════════════════════
+// GITHUB
+// ═══════════════════════
+function saveGitHub() {
+  localStorage.setItem('eryn_gh_token', els.githubTokenInput.value.trim());
+  localStorage.setItem('eryn_gh_repo',  els.githubRepoInput.value.trim());
+  els.githubStatus.textContent = `Saved: ${els.githubRepoInput.value.trim()}`;
+  addMsg('system','GitHub credentials saved.');
+}
+
+async function githubReadReadme() {
+  const token = localStorage.getItem('eryn_gh_token');
+  const repo  = localStorage.getItem('eryn_gh_repo') || els.githubRepoInput.value.trim();
+  if (!repo) { addMsg('error','Set a repo in the Files tab first.'); return; }
+  const headers = { Accept:'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  try {
+    const r = await fetch(`https://api.github.com/repos/${repo}/readme`, { headers });
+    if (!r.ok) throw new Error(`GitHub ${r.status}`);
+    const j = await r.json();
+    const text = atob(j.content.replace(/\n/g,''));
+    $('github-result').style.display = 'block';
+    $('github-result').textContent   = text.slice(0,600) + (text.length > 600 ? '\n[truncated]' : '');
+    addMsg('eryn', `README for ${repo}: ${text.slice(0,200)}…`);
+  } catch (e) { addMsg('error', `GitHub: ${e.message}`); }
+}
+
+async function githubPushCommit() {
+  const token = localStorage.getItem('eryn_gh_token');
+  const repo  = localStorage.getItem('eryn_gh_repo') || els.githubRepoInput.value.trim();
+  if (!token) { addMsg('error','Add a GitHub PAT in the Files tab.'); return; }
+  if (!repo)  { addMsg('error','Set a repo in the Files tab.'); return; }
+  const content  = els.fileEditor.value;
+  const filePath = els.selectedFileInput.value || 'eryn-edit.txt';
+  try {
+    const headers = { Authorization:`Bearer ${token}`, Accept:'application/vnd.github+json', 'Content-Type':'application/json', 'X-GitHub-Api-Version':'2022-11-28' };
+    let sha;
+    try { const x = await fetch(`https://api.github.com/repos/${repo}/contents/${filePath}`,{headers}); if(x.ok){const j=await x.json();sha=j.sha;} } catch {}
+    const body = { message:`Eryn: update ${filePath}`, content: btoa(unescape(encodeURIComponent(content))) };
+    if (sha) body.sha = sha;
+    const r = await fetch(`https://api.github.com/repos/${repo}/contents/${filePath}`,{method:'PUT',headers,body:JSON.stringify(body)});
+    if (!r.ok) { const j=await r.json(); throw new Error(j.message||`${r.status}`); }
+    $('github-result').style.display = 'block';
+    $('github-result').textContent   = `Pushed: ${filePath} to ${repo}`;
+    addMsg('eryn', `Pushed ${filePath} to ${repo}.`);
+    speak(`Pushed to GitHub.`);
+  } catch (e) { addMsg('error', `Push failed: ${e.message}`); }
+}
+
+// ═══════════════════════
+// KEYS
+// ═══════════════════════
+function saveKeys() {
+  localStorage.setItem('eryn_groq',   els.groqInput.value.trim());
+  localStorage.setItem('eryn_gemini', els.geminiInput.value.trim());
+  addMsg('system','API keys saved.'); speak('Keys saved.');
+}
+function clearKeys() {
+  ['eryn_groq','eryn_gemini'].forEach(k => localStorage.removeItem(k));
+  els.groqInput.value = ''; els.geminiInput.value = '';
+  addMsg('system','Keys cleared.');
+}
+
+// ═══════════════════════
+// UTILS
+// ═══════════════════════
+function resolveUrl(t) {
+  const lo = t.toLowerCase().replace(/^the\s+/,'').trim();
+  if (SITES[lo]) return SITES[lo];
+  if (/^https?:\/\//i.test(t)) return t;
+  // Fuzzy match
+  const keys = Object.keys(SITES);
+  for (const k of keys) {
+    if (lo === k || lo.includes(k) || k.includes(lo)) return SITES[k];
+  }
+  // Bare domain
+  if (/^[a-z0-9-]+\.[a-z]{2,}/i.test(t)) return `https://${t}`;
+  return null;
+}
+
+function extractPlace(cmd) {
+  return cmd.replace(/^(show|load|display|open|find)\s+(me\s+)?(a\s+)?map\s*(of|for)?/i,'')
+            .replace(/directions to/i,'').replace(/\s+in\s+(a\s+)?new\s+tab$/i,'').trim() || 'New York';
+}
+
+function openTab(url) {
+  const w = window.open(url,'_blank','noopener,noreferrer');
+  if (!w) addMsg('error','Pop-up blocked. Allow pop-ups for this page.');
+}
+
+function esc(v) {
+  return String(v||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[c]);
+}
+
+function speechErr(e) {
+  return ({
+    'not-allowed':'Microphone blocked. Allow access in browser settings.',
+    'no-speech':'Nothing heard.',
+    'audio-capture':'No microphone found.',
+    'network':'Voice recognition network error.'
+  })[e] || `Voice error: ${e}`;
+}
+
+// ── Start ──
+boot();
+</script>
+</body>
+</html>
